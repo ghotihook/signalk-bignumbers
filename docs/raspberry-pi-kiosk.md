@@ -129,6 +129,11 @@ display's code is fixed once created — to change it, delete the entry and
 add it again, which keeps an edit from silently creating a duplicate
 under a new code.
 
+**Colours** offers a few fixed high-contrast pairs, set per display. Red
+or amber on black preserve night vision at the helm; black on white or
+black on amber read better in direct sun. Each display can differ, so a
+cockpit screen and a nav-station screen don't have to match.
+
 Displays pick up changes on their own — an unconfigured one polls every
 5s waiting for a config to appear, and a running one re-checks its own
 config every 5s, reloading if it changed. So saving takes effect within a

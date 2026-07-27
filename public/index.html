@@ -267,6 +267,11 @@
     </label>
 
     <label>
+      Colours
+      <select id="theme"></select>
+    </label>
+
+    <label>
       Display name
       <input id="name" placeholder="shown at the top of the screen">
     </label>
@@ -340,6 +345,20 @@
     { name: "LOG", path: "navigation.log", factor: 0.0005399568034557235, offset: 0, unit: "nm", layout: "xxxxx.x", neg: false },
     { name: "SATS", path: "navigation.gnss.satellites", factor: 1, offset: 0, unit: "", layout: "xx", neg: false },
     { name: "BATT", path: "electrical.batteries.0.voltage", factor: 1, offset: 0, unit: "V", layout: "xx.x", neg: false },
+  ];
+
+  // Fixed high-contrast pairs rather than free colour pickers -- these are
+  // the combinations that stay readable on a screen in a cockpit. The
+  // display only ever receives two colours (bg/fg) and derives the muted
+  // title/unit shades from them, so a theme needs nothing else.
+  const THEMES = [
+    { name: "White on black", bg: "#000000", fg: "#ffffff" },
+    { name: "Black on white (daylight)", bg: "#ffffff", fg: "#000000" },
+    { name: "Red on black (night vision)", bg: "#000000", fg: "#ff3b30" },
+    { name: "Amber on black (night)", bg: "#000000", fg: "#ffb000" },
+    { name: "Green on black", bg: "#000000", fg: "#2fdf5a" },
+    { name: "Cyan on black", bg: "#000000", fg: "#3ad8ff" },
+    { name: "Black on amber (daylight)", bg: "#ffb000", fg: "#000000" },
   ];
 
   const el = (id) => document.getElementById(id);
@@ -518,6 +537,9 @@
     presetSelect.appendChild(new Option(p.field ? `${p.path} -> ${p.field}` : p.path, i));
   });
 
+  const themeSelect = el("theme");
+  THEMES.forEach((t, i) => themeSelect.appendChild(new Option(t.name, i)));
+
   // Which code is being edited, or null when creating a new one. Editing
   // keeps the code fixed so changing it can't silently create a duplicate
   // entry instead of renaming the one you opened.
@@ -545,6 +567,10 @@
       presetSelect.value = "0";
       applyConfig(PRESETS[0]);
     }
+    // Set here rather than in applyConfig, which the preset dropdown also
+    // calls -- picking a different instrument shouldn't reset the colours.
+    const theme = THEMES.findIndex((t) => t.bg === cfg?.bg && t.fg === cfg?.fg);
+    themeSelect.value = String(theme >= 0 ? theme : 0);
     updateKioskUrl();
   }
 
@@ -572,6 +598,9 @@
     if (el("unit").value.trim()) cfg.unit = el("unit").value.trim();
     if (el("factor").value && el("factor").value !== "1") cfg.factor = parseFloat(el("factor").value);
     if (el("offset").value && el("offset").value !== "0") cfg.offset = parseFloat(el("offset").value);
+    const theme = THEMES[themeSelect.value] || THEMES[0];
+    cfg.bg = theme.bg;
+    cfg.fg = theme.fg;
     return cfg;
   }
 
@@ -618,6 +647,8 @@
     if (cfg.unit) params.set("unit", cfg.unit);
     if (cfg.factor !== undefined) params.set("factor", cfg.factor);
     if (cfg.offset !== undefined) params.set("offset", cfg.offset);
+    params.set("bg", cfg.bg);
+    params.set("fg", cfg.fg);
     window.open(`${INSTRUMENT_URL}?${params.toString()}`, "_blank");
   });
 

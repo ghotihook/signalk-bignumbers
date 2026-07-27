@@ -12,10 +12,16 @@
     font-style: normal;
     font-display: block;
   }
+  /* A theme is just these two colours -- everything muted derives from
+     the foreground by opacity, so ?bg=/?fg= is all a theme needs to set. */
+  :root {
+    --bg: #000;
+    --fg: #fff;
+  }
   html, body {
     margin: 0;
     height: 100%;
-    background: #000;
+    background: var(--bg);
     overflow: hidden;
     cursor: none;
   }
@@ -25,7 +31,7 @@
     justify-content: center;
     height: 100vh;
     font-family: "Roboto Medium", ui-monospace, "SF Mono", Menlo, monospace;
-    color: #fff;
+    color: var(--fg);
     -webkit-font-smoothing: antialiased;
   }
   .title {
@@ -36,7 +42,7 @@
     font-weight: 500;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: #999;
+    opacity: 0.6;
   }
   .value-row {
     display: flex;
@@ -61,7 +67,7 @@
     width: 0;
   }
   .sign.stale, .value.stale {
-    color: #555;
+    opacity: 0.3;
   }
   .ghost {
     visibility: hidden;
@@ -69,7 +75,7 @@
   .unit {
     font-size: 0.15em;
     font-weight: 500;
-    color: #999;
+    opacity: 0.6;
     margin-left: 0.4em;
   }
   .error {
@@ -92,7 +98,7 @@
   }
   .unconfigured .hint {
     font-size: clamp(1rem, 2.5vw, 1.5rem);
-    color: #999;
+    opacity: 0.6;
     margin-top: 1rem;
   }
   #statusDot {
@@ -157,6 +163,8 @@
       offset: p.has("offset") ? parseFloat(p.get("offset")) : 0, // unit conversion offset (e.g. Kelvin -> Celsius)
       unit: p.get("unit") || "",                     // unit label after the number
       expectNegative: p.get("neg") === "true",       // reserve a sign column?
+      bg: p.get("bg") || null,                       // theme background, e.g. #000000
+      fg: p.get("fg") || null,                       // theme foreground, e.g. #ffffff
       staleMs: 3000,                // grey out (and reset to placeholder) if no update within this window
       reconnectMs: 1000,            // delay before retrying a dropped connection
       ...parseLayout(p.get("layout") || "x"),
@@ -221,6 +229,8 @@
     document.title = CONFIG.name;
     titleEl.textContent = CONFIG.name;
     unitEl.textContent = CONFIG.unit;
+    if (CONFIG.bg) document.documentElement.style.setProperty("--bg", CONFIG.bg);
+    if (CONFIG.fg) document.documentElement.style.setProperty("--fg", CONFIG.fg);
     messageEl.hidden = true;
     valueRowEl.hidden = false;
     run();
