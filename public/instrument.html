@@ -101,33 +101,45 @@
   </div>
 
 <script>
-  // --- Instrument configuration, read entirely from the URL query string ---
-  // ?path=environment.wind.speedApparent&name=AWS&layout=xx.xx&unit=kt&factor=1.9438444924406
-  // ?path=navigation.attitude&field=roll&name=Heel&layout=xx&neg=true&unit=%C2%B0&factor=57.29577951308232
-  // ?path=environment.water.temperature&name=SEA&layout=xx.x&unit=%C2%B0C&factor=1&offset=-273.15
+  // --- Instrument configuration ---
+  // Either read entirely from the URL query string:
+  //   ?path=environment.wind.speedApparent&name=AWS&layout=xx.xx&unit=kt&factor=1.9438444924406
+  //   ?path=navigation.attitude&field=roll&name=Heel&layout=xx&neg=true&unit=%C2%B0&factor=57.29577951308232
+  //   ?path=environment.water.temperature&name=SEA&layout=xx.x&unit=%C2%B0C&factor=1&offset=-273.15
+  // ...or, for a "dumb" display that never needs its own config touched,
+  // just a display id -- the real config is fetched from SignalK itself:
+  //   ?display=helm
   const params = new URLSearchParams(window.location.search);
+  const displayId = params.get("display");
 
   function parseLayout(layout) {
     const [intPart, decPart] = layout.split(".");
     return { intDigits: intPart.length, decimals: decPart ? decPart.length : 0 };
   }
 
-  const CONFIG = {
-    // Defaults to the host that served this page -- once installed as a
-    // SignalK webapp that's always the right SignalK server. Override with
-    // ?host= to point at a different server (e.g. a local test instance).
-    host: params.get("host") || window.location.host || "hl.local:3000",
-    path: params.get("path"),                          // SignalK path to subscribe to
-    field: params.get("field") || null,                 // key to pull out of a compound object value
-    name: params.get("name"),                           // short label + browser tab title
-    factor: params.has("factor") ? parseFloat(params.get("factor")) : 1, // unit conversion multiplier
-    offset: params.has("offset") ? parseFloat(params.get("offset")) : 0, // unit conversion offset (e.g. Kelvin -> Celsius)
-    unit: params.get("unit") || "",                     // unit label after the number
-    expectNegative: params.get("neg") === "true",       // reserve a sign column?
-    staleMs: 3000,                // grey out (and reset to placeholder) if no update within this window
-    reconnectMs: 1000,            // delay before retrying a dropped connection
-    ...parseLayout(params.get("layout") || "x"),
-  };
+  // Builds CONFIG from anything with URLSearchParams' get()/has() shape --
+  // used directly for the query-string case, and via a tiny adapter (see
+  // fetchDisplayConfig) for config fetched from SignalK's applicationData.
+  function buildConfig(p) {
+    return {
+      // Defaults to the host that served this page -- once installed as a
+      // SignalK webapp that's always the right SignalK server. Override
+      // with ?host= to point at a different server (e.g. a test instance).
+      host: p.get("host") || window.location.host || "hl.local:3000",
+      path: p.get("path"),                          // SignalK path to subscribe to
+      field: p.get("field") || null,                 // key to pull out of a compound object value
+      name: p.get("name"),                           // short label + browser tab title
+      factor: p.has("factor") ? parseFloat(p.get("factor")) : 1, // unit conversion multiplier
+      offset: p.has("offset") ? parseFloat(p.get("offset")) : 0, // unit conversion offset (e.g. Kelvin -> Celsius)
+      unit: p.get("unit") || "",                     // unit label after the number
+      expectNegative: p.get("neg") === "true",       // reserve a sign column?
+      staleMs: 3000,                // grey out (and reset to placeholder) if no update within this window
+      reconnectMs: 1000,            // delay before retrying a dropped connection
+      ...parseLayout(p.get("layout") || "x"),
+    };
+  }
+
+  let CONFIG = buildConfig(params);
 
   const titleEl = document.getElementById("title");
   const valueRowEl = document.getElementById("valueRow");
@@ -137,15 +149,54 @@
   const dotEl = document.getElementById("statusDot");
   let staleTimer = null;
 
-  if (!CONFIG.path || !CONFIG.name) {
+  function showError(message) {
     document.title = "SignalK Instrument — error";
     titleEl.textContent = "ERROR";
-    valueRowEl.innerHTML = '<span class="error">Missing required ?path= and/or ?name= parameter</span>';
-  } else {
+    valueRowEl.innerHTML = `<span class="error">${message}</span>`;
+  }
+
+  function start() {
+    if (!CONFIG.path || !CONFIG.name) {
+      showError("Missing required ?path= and/or ?name= parameter");
+      return;
+    }
     document.title = CONFIG.name;
     titleEl.textContent = CONFIG.name;
     unitEl.textContent = CONFIG.unit;
     run();
+  }
+
+  // Fetches this display's config from SignalK's applicationData store
+  // (saved there by the picker page's "Save to SignalK" button), keyed by
+  // display id. Retries a few times on a short delay since SignalK may
+  // still be starting up when a kiosk boots.
+  function fetchDisplayConfig(attempt) {
+    const proto = window.location.protocol === "https:" ? "https:" : "http:";
+    fetch(`${proto}//${CONFIG.host}/signalk/v1/applicationData/global/signalk-bignumbers/1`)
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((data) => {
+        const raw = data[displayId];
+        if (!raw) throw new Error(`No saved config for display "${displayId}"`);
+        const getter = {
+          get: (k) => (raw[k] === undefined || raw[k] === null ? null : String(raw[k])),
+          has: (k) => raw[k] !== undefined && raw[k] !== null,
+        };
+        CONFIG = buildConfig(getter);
+        start();
+      })
+      .catch((err) => {
+        if (attempt < 5) {
+          setTimeout(() => fetchDisplayConfig(attempt + 1), CONFIG.reconnectMs);
+        } else {
+          showError(err.message);
+        }
+      });
+  }
+
+  if (displayId) {
+    fetchDisplayConfig(0);
+  } else {
+    start();
   }
 
   // Measure with real digit glyphs, not the placeholder's dashes -- a

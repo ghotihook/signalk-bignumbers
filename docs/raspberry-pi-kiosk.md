@@ -57,6 +57,14 @@ master and doesn't fight `getty@tty1` for the same VT.
 sudo systemctl disable getty@tty1.service
 ```
 
+The URL to display lives in a separate one-line config file, not the unit
+file itself — see [Configuring what a display shows](#configuring-what-a-display-shows)
+below for why. `/etc/default/cog-kiosk`:
+
+```bash
+KIOSK_URL="http://hl.local:3000/signalk-bignumbers/instrument.html?display=helm"
+```
+
 `/etc/systemd/system/cog-kiosk.service`:
 
 ```ini
@@ -74,7 +82,8 @@ TTYVHangup=yes
 StandardInput=tty
 StandardOutput=journal
 StandardError=journal
-ExecStart=/usr/bin/cog --platform=drm "http://hl.local:3000/signalk-bignumbers/instrument.html?host=epi.local%%3A2001&path=navigation.attitude&field=roll&name=HEEL&layout=xx&neg=true&unit=%%C2%%B0&factor=57.29577951308232"
+EnvironmentFile=/etc/default/cog-kiosk
+ExecStart=/usr/bin/cog --platform=drm "$KIOSK_URL"
 Restart=always
 RestartSec=2
 
@@ -82,21 +91,17 @@ RestartSec=2
 WantedBy=multi-user.target
 ```
 
-Adjust the `ExecStart` URL for the instrument you want to show — see the
-main repo README for the query-string parameters. Two escaping gotchas to
-keep in mind if you edit it:
+`ExecStart` never needs editing again — to point this Pi at a different
+display, edit the one line in `/etc/default/cog-kiosk` and
+`sudo systemctl restart cog-kiosk`.
 
-- **`%` in unit files is a systemd specifier prefix.** Any literal `%` in
-  the URL (e.g. URL-encoded characters like `%3A` for `:`) must be doubled
-  to `%%3A`, or systemd fails with `Failed to resolve unit specifiers` and
-  the unit won't load at all (`bad-setting` state). This only applies
-  inside the `.service` file — not when running `cog` directly from a
-  shell.
-- **Non-ASCII characters (e.g. `°`) typed directly on an SSH command line
-  can get mangled** if the shell session isn't in a UTF-8 locale, which
-  cog then rejects as invalid UTF-8. Percent-encode them instead of typing
-  the raw character: `°` is UTF-8 bytes `C2 B0`, so use `%C2%B0` on the
-  command line (`%%C2%%B0` inside the unit file).
+This also sidesteps a couple of escaping gotchas that only bite when a URL
+is written directly into a `.service` file's `ExecStart`: systemd treats
+`%` as a specifier prefix there (a literal `%3A` breaks unit parsing unless
+doubled to `%%3A`), and non-ASCII characters like `°` typed on a
+non-UTF-8-locale SSH session can get mangled before cog ever sees them —
+worth percent-encoding them (`°` is `%C2%B0`) regardless of which file
+they end up in.
 
 Enable and start:
 
@@ -106,6 +111,34 @@ sudo systemctl enable --now cog-kiosk.service
 systemctl status cog-kiosk.service
 journalctl -u cog-kiosk -f   # tail logs
 ```
+
+## Configuring what a display shows
+
+Each kiosk should stay as dumb as possible: its only local config is
+`KIOSK_URL`, pointing at `instrument.html?display=<id>` — a display id
+(`helm`, `nav-station`, ...), not an instrument. What that id actually
+shows lives on the SignalK server itself, in SignalK's built-in
+[applicationData](https://signalk.org) store, so changing a display never
+means SSHing into the Pi again.
+
+`instrument.html?display=<id>` fetches its config with a plain,
+unauthenticated `GET` (SignalK allows anonymous reads by default). To set
+or change that config, open the picker page (`index.html`) from any
+browser on the network:
+
+1. Build the instrument as usual (preset, path, layout, etc.).
+2. Enter a **Display ID** matching what the kiosk's `KIOSK_URL` uses
+   (e.g. `helm`).
+3. Under "SignalK login," log in once — SignalK requires auth for writes
+   even when reads are open, so this step only applies to the picker, not
+   to any display. The token is kept in the browser's `localStorage`.
+4. Click **Save to SignalK**.
+
+The display picks up the change on its next reload — cog doesn't
+auto-refresh, so either wait for `Restart=always` to cycle it after a
+network blip, or `sudo systemctl restart cog-kiosk` on that Pi once to
+pick up a change immediately. A Pi's local config only needs to change
+again if you're pointing it at a different SignalK server entirely.
 
 ## Disable console blanking
 

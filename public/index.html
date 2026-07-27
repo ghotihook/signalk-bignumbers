@@ -86,11 +86,21 @@
   button.secondary {
     background: #333;
   }
+  .version {
+    font-size: 0.75rem;
+    color: #666;
+    font-weight: normal;
+  }
+  .status {
+    font-size: 0.8rem;
+    color: #aaa;
+    min-height: 1em;
+  }
 </style>
 </head>
 <body>
 <form id="form" onsubmit="return false;">
-  <h1>SignalK Instrument Picker</h1>
+  <h1>SignalK Instrument Picker <span class="version">v0.0.1</span></h1>
 
   <label>
     Host:Port
@@ -132,6 +142,30 @@
     <a class="btn" id="openBtn" target="_blank">Open</a>
     <button type="button" class="secondary" id="copyBtn">Copy URL</button>
   </div>
+
+  <label>
+    Display ID
+    <input id="displayId" placeholder="e.g. helm">
+  </label>
+
+  <div class="url-box" id="displayUrlBox"></div>
+
+  <details>
+    <summary>SignalK login (required to save)</summary>
+    <div class="advanced">
+      <label>Username <input id="username"></label>
+      <label>Password <input id="password" type="password"></label>
+    </div>
+    <div class="buttons">
+      <button type="button" class="secondary" id="loginBtn">Log in</button>
+    </div>
+    <div class="status" id="loginStatus"></div>
+  </details>
+
+  <div class="buttons">
+    <button type="button" id="saveBtn">Save to SignalK</button>
+  </div>
+  <div class="status" id="saveStatus"></div>
 </form>
 
 <script>
@@ -212,14 +246,87 @@
   }
 
   presetSelect.addEventListener("change", () => applyPreset(PRESETS[presetSelect.value]));
-  form.addEventListener("input", updateUrl);
+  form.addEventListener("input", () => { updateUrl(); updateDisplayUrl(); });
 
   el("copyBtn").addEventListener("click", () => {
     navigator.clipboard.writeText(updateUrl());
   });
 
+  // --- Dumb display support: save this instrument config to SignalK's
+  // applicationData store, keyed by display id, so a kiosk pointed at
+  // ?display=<id> never needs its own config touched again. Reads are
+  // unauthenticated; SignalK requires a login for writes.
+  const TOKEN_KEY = "sk_token";
+
+  function signalkOrigin() {
+    return `${window.location.protocol}//${el("host").value.trim()}`;
+  }
+
+  function updateDisplayUrl() {
+    const id = el("displayId").value.trim();
+    el("displayUrlBox").textContent = id
+      ? `${instrumentBaseUrl()}?display=${encodeURIComponent(id)}`
+      : "(set a Display ID to see its URL)";
+  }
+
+  function instrumentConfig() {
+    const cfg = {
+      path: el("path").value.trim(),
+      name: el("name").value.trim(),
+      layout: el("layout").value.trim() || "x",
+      neg: el("neg").value === "true",
+    };
+    if (el("field").value.trim()) cfg.field = el("field").value.trim();
+    if (el("unit").value.trim()) cfg.unit = el("unit").value.trim();
+    if (el("factor").value && el("factor").value !== "1") cfg.factor = parseFloat(el("factor").value);
+    if (el("offset").value && el("offset").value !== "0") cfg.offset = parseFloat(el("offset").value);
+    return cfg;
+  }
+
+  el("loginBtn").addEventListener("click", async () => {
+    el("loginStatus").textContent = "Logging in...";
+    try {
+      const res = await fetch(`${signalkOrigin()}/signalk/v1/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: el("username").value, password: el("password").value }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.token) throw new Error(data.message || `HTTP ${res.status}`);
+      localStorage.setItem(TOKEN_KEY, data.token);
+      el("password").value = "";
+      el("loginStatus").textContent = "Logged in.";
+    } catch (err) {
+      el("loginStatus").textContent = `Login failed: ${err.message}`;
+    }
+  });
+
+  el("saveBtn").addEventListener("click", async () => {
+    const displayId = el("displayId").value.trim();
+    if (!displayId) { el("saveStatus").textContent = "Set a Display ID first."; return; }
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) { el("saveStatus").textContent = "Log in first."; return; }
+
+    el("saveStatus").textContent = "Saving...";
+    const url = `${signalkOrigin()}/signalk/v1/applicationData/global/signalk-bignumbers/1`;
+    try {
+      const current = await fetch(url).then((r) => (r.ok ? r.json() : {}));
+      current[displayId] = instrumentConfig();
+      const res = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify(current),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      el("saveStatus").textContent = `Saved "${displayId}".`;
+    } catch (err) {
+      el("saveStatus").textContent = `Save failed: ${err.message}`;
+    }
+  });
+
   el("host").value = window.location.host || "hl.local:3000";
   applyPreset(PRESETS[0]);
+  updateDisplayUrl();
 </script>
 </body>
 </html>
