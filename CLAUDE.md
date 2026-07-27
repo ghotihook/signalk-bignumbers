@@ -88,7 +88,7 @@ tooling to generate a lockfile-driven ignore list from.
 
 ## Versioning
 
-`package.json` `version` and the `v0.2.0` label in `public/index.html`
+`package.json` `version` and the `v0.0.4` label in `public/index.html`
 are both hand-maintained — there's no build step to derive one from the
 other, so bump both together, and tag the release commit (`git tag -a
 X.Y.Z`).
