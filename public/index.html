@@ -313,7 +313,7 @@
       const current = await fetch(url).then((r) => (r.ok ? r.json() : {}));
       current[displayId] = instrumentConfig();
       const res = await fetch(url, {
-        method: "PUT",
+        method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify(current),
       });
