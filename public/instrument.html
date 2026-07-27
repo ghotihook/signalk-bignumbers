@@ -17,6 +17,8 @@
   :root {
     --bg: #000;
     --fg: #fff;
+    /* Shared by the title and the unit so the two labels always match. */
+    --label-size: clamp(1.6rem, 5vw, 4rem);
   }
   html, body {
     margin: 0;
@@ -38,7 +40,7 @@
     position: fixed;
     top: 1.2rem;
     left: 1.2rem;
-    font-size: clamp(1.6rem, 5vw, 4rem);
+    font-size: var(--label-size);
     font-weight: 500;
     letter-spacing: 0.2em;
     text-transform: uppercase;
@@ -73,7 +75,10 @@
     visibility: hidden;
   }
   .unit {
-    font-size: 0.15em;
+    /* Absolute rather than an em of the value row, so it tracks the title
+       instead of growing with the number. fitDisplay() still converges:
+       the unit is then a constant width in the row it measures. */
+    font-size: var(--label-size);
     font-weight: 500;
     opacity: 0.6;
     margin-left: 0.4em;
