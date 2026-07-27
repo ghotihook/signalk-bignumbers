@@ -11,71 +11,55 @@ history, nothing to touch. Just the numbers, as large, as current and as
 legible as the screen allows, for someone who has half a second to look
 up mid-manoeuvre.
 
-**A display is anything with a browser.** A £15 Raspberry Pi Zero 2 W
-driving an HDMI panel on the mast, an old iPhone in a dry bag, an iPad at
-the nav station, any cheap Android tablet zip-tied to the pushpit — all of
-them run the same page and none of them needs anything installed. There is
-no app, no pairing, no per-device software: a display is a URL.
+A display is anything with a browser — a Raspberry Pi with an HDMI panel,
+a phone, a tablet, a laptop. They all open the same page, and none of them
+needs anything installed.
 
-Each one knows only the name in that URL. What it shows is stored on the
-SignalK server and managed from a web page, so reconfiguring a screen
-never means touching the screen.
+Each display knows only the name in its URL. What it shows is stored on
+the SignalK server and managed from a web page, so changing what a display
+shows doesn't mean touching it.
 
-## Every screen on one page
+## The webapp
 
-![The webapp's display list: three rows — mast1 showing STW, mast2 showing TWA, and phone showing STW, TWA and TWS — each with Edit and Delete buttons](docs/images/webapp-displays.png)
+![The webapp's display list: rows for mast1 showing STW, mast2 showing TWA, and phone showing STW, TWA and TWS, each with Edit and Delete buttons](docs/images/webapp-displays.png)
 
-That's the entire management interface. One row per screen, showing what
-it displays right now; **Edit** changes it, and the screen picks the
-change up within about 5 seconds. Nothing to SSH into, no config file on
-any Pi, no restart.
+One row per display, showing what it's currently set to. **Edit** changes
+it, and the display picks the change up within about 5 seconds.
 
-A display is identified by a name it asks for in its URL — on a kiosk Pi
-that's its hostname, filled in by systemd, so every Pi runs a byte-for-byte
-identical service file and its identity comes from the name you gave the
-machine.
-
-A display with no entry in that list says so, in text you can read from
-the same distance as the numbers:
+On a kiosk Pi the name is the hostname, filled in by systemd, so every Pi
+runs the same service file. A display with no entry in the list shows its
+own name instead:
 
 ![A Pi HDMI screen showing the hostname mast1 in large text, above the line "Not configured yet — add this hostname in the SignalK Displays webapp"](docs/images/display-unconfigured.jpg)
 
-So commissioning a screen is: plug it in, read the name off it, add that
-name to the list. No keyboard, no SSH, no serial console — the device
-tells you what it wants to be called and the rest happens in a browser.
+So setting one up is: plug it in, read the name off the screen, add it to
+the list.
 
-## The display is a URL
+## What can be a display
 
-The instrument is a single static HTML page with no build step, no
-framework and no dependencies, so the hardware requirement is "runs a
-browser from this decade":
+The instrument is one static HTML page, no build step and no
+dependencies, so most things with a browser will run it.
 
 | Display | How it opens the page |
 |---|---|
-| **Raspberry Pi Zero 2 W** + HDMI panel | boots straight into it fullscreen, hostname as its name ([guide](docs/raspberry-pi-kiosk.md)) |
-| **iPhone / iPad** | open the URL in Safari and **Add to Home Screen**, so it's one tap from the lock screen |
-| **Android phone or cheap tablet** | same, via Chrome's **Add to Home screen** |
-| **Laptop at the nav station** | any browser, fullscreen with `F11` |
+| Raspberry Pi Zero 2 W + HDMI panel | boots into it fullscreen, hostname as its name ([guide](docs/raspberry-pi-kiosk.md)) |
+| iPhone / iPad | open the URL in Safari, **Add to Home Screen** |
+| Android phone or tablet | same, via Chrome's **Add to Home screen** |
+| Laptop | any browser, fullscreen |
 
-Nothing is installed on any of them. Below is the `phone` row from the
-list above — the same page the mast Pis are running, against a different
-stored config:
+Below is the `phone` row from the list above — the same page as the mast
+Pis, with a different stored config:
 
 <img src="docs/images/display-phone.png" alt="A phone showing three stacked bands: STW 0.0 kt white on black, TWA 13° black on white, TWS 16.2 kt white on black" width="260">
 
-Going from one number to three was **+ Add another number** in the
-webapp. Nothing on the phone was touched to make it happen, and nothing
-would need touching to turn it back into a single big TWA.
+Going from one value to three was **+ Add another number** in the webapp.
+Nothing on the phone changed.
 
-A retired phone is a genuinely good repeater: a bright, sharp,
-battery-backed screen you already own, and if it goes over the side you
-are out a phone you had stopped using. The mast wants a Pi Zero 2 W
-instead, because a screen up there has to survive rain and come back on
-its own after the power blinks.
+An old phone makes a good repeater. The mast wants a Pi, which comes back
+on its own after a power cut and doesn't mind the rain.
 
-On a phone or tablet, set the screen to never auto-lock and turn the
-brightness up. The page holds no wake-lock, so an idle timeout is the one
-thing that will quietly take a repeater off the air mid-leg.
+Set a phone or tablet to never auto-lock. The page holds no wake-lock, so
+the screen timeout will take it off the air.
 
 ## What's here
 
@@ -89,14 +73,13 @@ thing that will quietly take a repeater off the air mid-leg.
 
 ## Install
 
-It's a SignalK webapp — static files, no plugin and no backend, so there
-is nothing to configure on the server side.
+It's a SignalK webapp — static files, no plugin and no backend.
 
-The easy way is SignalK's own **Appstore**: in the server's admin UI, find
-`signalk-bignumbers` under *Appstore → Available*, install it, and restart
-the server. It then appears in the Webapps menu.
+In the server's admin UI, find `signalk-bignumbers` under *Appstore →
+Available*, install it and restart the server. It then appears in the
+Webapps menu.
 
-By hand, if you prefer:
+Or by hand:
 
 ```bash
 cd ~/.signalk
@@ -104,8 +87,8 @@ npm install signalk-bignumbers
 sudo systemctl restart signalk    # or however your server is run
 ```
 
-To follow the development version instead of a release, install straight
-from the repo: `npm install ghotihook/signalk-bignumbers`.
+For the development version, install from the repo instead:
+`npm install ghotihook/signalk-bignumbers`.
 
 ## How a display gets configured
 
