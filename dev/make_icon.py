@@ -7,10 +7,11 @@ binary, and so it keeps using the same face as the instrument itself.
 
     python3 dev/make_icon.py
 
-Three stacked bands with inverted colours, which is what a three-value
-display actually looks like. A single big number on a tile was the
-obvious icon and is already taken -- KIP's looks like that -- so the
-bands are doing the work of telling the two apart at thumbnail size.
+Two stacked bands with inverted colours, each with its label top-left,
+which is what a two-value display actually looks like. A single big
+number on a tile was the obvious icon and is already taken -- KIP's looks
+like that -- so the bands are doing the work of telling the two apart at
+thumbnail size.
 
 Needs Pillow, which nothing else here does: pip install pillow
 """
@@ -27,16 +28,23 @@ SIZE = 512          # well above SignalK's 72px minimum, so it scales down clean
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 
-# One entry per band, top to bottom: the number, and whether the band is
-# inverted. Widths differ so the tile doesn't read as one repeated glyph.
+# One entry per band, top to bottom: label, value, and whether the band is
+# inverted.
 BANDS = [
-    ("8.4", False),
-    ("132", True),
-    ("16.2", False),
+    ("STW", "8.4", False),
+    ("TWA", "143", True),
 ]
 
-FILL = 0.62         # fraction of a band's height the digits occupy
+# Digits are sized against the space left under the label, not the whole
+# band, so the two can't collide the way they did when this was tuned by
+# eye against the band height.
+FILL = 0.72         # fraction of that remaining space the digits occupy
 SIDE = 0.08         # fraction of the tile kept clear left and right
+LABEL = 0.14        # label cap height, as a fraction of band height
+LABEL_PAD = 0.10    # label inset from the band's top-left, same fraction
+LABEL_GAP = 0.04    # clearance under the label before digits may start
+LABEL_ALPHA = 0.6   # matches .title's opacity in instrument.html
+TRACKING = 0.2      # matches .title's letter-spacing, in em
 
 
 def fitted_font(draw, text, max_w, max_h):
@@ -50,6 +58,18 @@ def fitted_font(draw, text, max_w, max_h):
         size += 1
 
 
+def draw_tracked(draw, xy, text, font, fill, tracking):
+    """PIL has no letter-spacing, so step the pen between glyphs."""
+    x, y = xy
+    for ch in text:
+        draw.text((x, y), ch, font=font, fill=fill)
+        x += draw.textlength(ch, font=font) + font.size * tracking
+
+
+def blend(fg, bg, alpha):
+    return tuple(round(f * alpha + b * (1 - alpha)) for f, b in zip(fg, bg))
+
+
 def main():
     img = Image.new("RGB", (SIZE, SIZE), BLACK)
     draw = ImageDraw.Draw(img)
@@ -59,23 +79,35 @@ def main():
 
     # One size for every band, so the tile reads as one instrument the way
     # fitDisplay() makes the real screen do.
+    label_font = fitted_font(draw, "M", SIZE, band_h * LABEL)
+
+    # Space under the label is what the digits actually get.
+    digits_top = band_h * (LABEL_PAD + LABEL + LABEL_GAP)
+    digits_h = band_h - digits_top
+
     font = min(
-        (fitted_font(draw, text, max_w, band_h * FILL) for text, _ in BANDS),
+        (fitted_font(draw, v, max_w, digits_h * FILL) for _, v, _ in BANDS),
         key=lambda f: f.size,
     )
 
-    for i, (text, inverted) in enumerate(BANDS):
+    for i, (label, value, inverted) in enumerate(BANDS):
         top = round(i * band_h)
         bottom = round((i + 1) * band_h)
         bg, fg = (WHITE, BLACK) if inverted else (BLACK, WHITE)
         draw.rectangle([0, top, SIZE, bottom - 1], fill=bg)
 
+        pad = band_h * LABEL_PAD
+        draw_tracked(
+            draw, (pad, top + pad), label, label_font,
+            blend(fg, bg, LABEL_ALPHA), TRACKING,
+        )
+
         # Centre on the ink, not the font's line box: digits have no
         # descenders, so the leading would push them visibly high.
-        l, t, r, b = draw.textbbox((0, 0), text, font=font)
+        l, t, r, b = draw.textbbox((0, 0), value, font=font)
         draw.text(
-            ((SIZE - (r - l)) / 2 - l, top + (band_h - (b - t)) / 2 - t),
-            text,
+            ((SIZE - (r - l)) / 2 - l, top + digits_top + (digits_h - (b - t)) / 2 - t),
+            value,
             font=font,
             fill=fg,
         )
