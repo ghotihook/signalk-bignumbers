@@ -237,8 +237,9 @@
     </div>
     <div class="status" id="listStatus"></div>
     <p class="hint">
-      A kiosk with no config yet shows its own 4-character code on screen.
-      Add that code here to tell it what to display.
+      Each display is identified by its hostname. A display with nothing
+      configured shows that hostname in large text on screen — add it here
+      to tell it what to show.
     </p>
   </section>
 
@@ -252,10 +253,13 @@
     </div>
 
     <label>
-      Display code
-      <input id="code" placeholder="e.g. f3a9" autocapitalize="off" autocomplete="off" spellcheck="false">
+      Display hostname
+      <input id="code" placeholder="e.g. helm" autocapitalize="off" autocomplete="off" spellcheck="false">
     </label>
-    <div class="hint" id="codeHint">The code shown on the kiosk's screen.</div>
+    <div class="hint" id="codeHint">
+      The hostname of the Pi running this display, exactly as it appears in
+      large text on its screen.
+    </div>
 
     <label>
       Instrument
@@ -449,7 +453,7 @@
     if (codes.length === 0) {
       const empty = document.createElement("div");
       empty.className = "empty";
-      empty.textContent = "No displays configured yet. Add one using the code shown on a kiosk screen.";
+      empty.textContent = "No displays configured yet. Add one using the hostname shown on a display's screen.";
       rows.appendChild(empty);
       return;
     }
@@ -530,8 +534,8 @@
     el("code").value = code || "";
     el("code").disabled = !!code;
     el("codeHint").textContent = code
-      ? "To change the code, delete this display and add it again."
-      : "The code shown on the kiosk's screen.";
+      ? "Fixed once created. To point a different Pi at this instrument, delete this entry and add its hostname instead."
+      : "The hostname of the Pi running this display, exactly as it appears in large text on its screen.";
 
     if (cfg) {
       applyConfig(cfg);
