@@ -202,7 +202,7 @@
   // restart needed. A genuine network/server problem still gives up after
   // a handful of quick retries and shows an error instead.
   const UNCONFIGURED_POLL_MS = 5000;
-  const CONFIG_POLL_MS = 10000;
+  const CONFIG_POLL_MS = 5000;
 
   function configUrl() {
     const proto = window.location.protocol === "https:" ? "https:" : "http:";

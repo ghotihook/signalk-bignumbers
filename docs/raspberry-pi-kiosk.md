@@ -140,7 +140,7 @@ off the physical screen (no SSH needed) and register it:
 
 Displays pick up changes on their own — an unconfigured one polls every
 5s waiting for a config to appear, and a running one re-checks its own
-config every 10s, reloading if it changed. So saving in the picker takes
+config every 5s, reloading if it changed. So saving in the picker takes
 effect within a few seconds, and `systemctl restart cog-kiosk` is never
 needed to change what a display shows. Deleting a display's entry sends
 it back to showing its code, ready to be reassigned.
