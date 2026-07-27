@@ -59,10 +59,13 @@ sudo systemctl disable getty@tty1.service
 
 The URL to display lives in a separate one-line config file, not the unit
 file itself — see [Configuring what a display shows](#configuring-what-a-display-shows)
-below for why. `/etc/default/cog-kiosk`:
+below for why. Its display id is derived once from the Pi's own MAC
+address (last 4 hex chars) rather than a name you have to invent and keep
+in sync by hand:
 
 ```bash
-KIOSK_URL="http://hl.local:3000/signalk-bignumbers/instrument.html?display=helm"
+ID=$(cat /sys/class/net/wlan0/address | tr -d ':' | tail -c 5)
+echo "KIOSK_URL=\"http://hl.local:3000/signalk-bignumbers/instrument.html?display=$ID\"" | sudo tee /etc/default/cog-kiosk
 ```
 
 `/etc/systemd/system/cog-kiosk.service`:
@@ -116,29 +119,31 @@ journalctl -u cog-kiosk -f   # tail logs
 
 Each kiosk should stay as dumb as possible: its only local config is
 `KIOSK_URL`, pointing at `instrument.html?display=<id>` — a display id
-(`helm`, `nav-station`, ...), not an instrument. What that id actually
-shows lives on the SignalK server itself, in SignalK's built-in
-[applicationData](https://signalk.org) store, so changing a display never
-means SSHing into the Pi again.
+derived from its own MAC address (see above), not an instrument. What
+that id actually shows lives on the SignalK server itself, in SignalK's
+built-in [applicationData](https://signalk.org) store, so changing a
+display never means SSHing into the Pi again, and there's no id to invent
+or keep in sync by hand.
 
-`instrument.html?display=<id>` fetches its config with a plain,
-unauthenticated `GET` (SignalK allows anonymous reads by default). To set
-or change that config, open the picker page (`index.html`) from any
-browser on the network:
+**A display with no saved config yet shows its own id, large, on screen**
+— that's the normal state right after first boot. Read the id off the
+physical screen (no SSH needed) and hand it to the picker page:
 
-1. Build the instrument as usual (preset, path, layout, etc.).
-2. Enter a **Display ID** matching what the kiosk's `KIOSK_URL` uses
-   (e.g. `helm`).
-3. Under "SignalK login," log in once — SignalK requires auth for writes
+1. Open the picker page (`index.html`) from any browser on the network.
+2. Build the instrument as usual (preset, path, layout, etc.).
+3. Enter the **Display ID** shown on the kiosk's screen.
+4. Under "SignalK login," log in once — SignalK requires auth for writes
    even when reads are open, so this step only applies to the picker, not
    to any display. The token is kept in the browser's `localStorage`.
-4. Click **Save to SignalK**.
+5. Click **Save to SignalK**.
 
-The display picks up the change on its next reload — cog doesn't
-auto-refresh, so either wait for `Restart=always` to cycle it after a
-network blip, or `sudo systemctl restart cog-kiosk` on that Pi once to
-pick up a change immediately. A Pi's local config only needs to change
-again if you're pointing it at a different SignalK server entirely.
+An unconfigured display polls every few seconds waiting for its config to
+appear, so it starts showing the instrument on its own within a few
+seconds of saving — no restart needed. Once configured, changing it again
+later still needs `sudo systemctl restart cog-kiosk` on that Pi to pick
+up the new value (only the initial "no config yet" state polls). A Pi's
+local config only needs to change at all if you're pointing it at a
+different SignalK server entirely.
 
 ## Disable console blanking
 

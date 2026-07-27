@@ -78,6 +78,20 @@
     max-width: 80vw;
     text-align: center;
   }
+  .unconfigured {
+    text-align: center;
+  }
+  .unconfigured .id {
+    font-size: clamp(3rem, 18vw, 9rem);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    font-variant-numeric: tabular-nums;
+  }
+  .unconfigured .hint {
+    font-size: clamp(1rem, 2.5vw, 1.5rem);
+    color: #999;
+    margin-top: 1rem;
+  }
   #statusDot {
     position: fixed;
     top: 1.2rem;
@@ -155,6 +169,20 @@
     valueRowEl.innerHTML = `<span class="error">${message}</span>`;
   }
 
+  // Shown when a display id has no saved config yet -- the normal state
+  // for a freshly set-up kiosk. Puts the id itself front and center so
+  // whoever's looking at the physical screen can read it off and hand it
+  // to the picker page, no SSH access needed.
+  function showUnconfigured() {
+    document.title = `Unconfigured — ${displayId}`;
+    titleEl.textContent = "";
+    valueRowEl.innerHTML = `
+      <div class="unconfigured">
+        <div class="id">${displayId}</div>
+        <div class="hint">Not configured yet — enter this Display ID in the SignalK instrument picker</div>
+      </div>`;
+  }
+
   function start() {
     if (!CONFIG.path || !CONFIG.name) {
       showError("Missing required ?path= and/or ?name= parameter");
@@ -168,15 +196,24 @@
 
   // Fetches this display's config from SignalK's applicationData store
   // (saved there by the picker page's "Save to SignalK" button), keyed by
-  // display id. Retries a few times on a short delay since SignalK may
-  // still be starting up when a kiosk boots.
+  // display id. A missing config is the normal state for a freshly set-up
+  // display, so that case polls indefinitely (showing the id) rather than
+  // giving up -- it'll pick the config up as soon as it's saved, with no
+  // restart needed. A genuine network/server problem still gives up after
+  // a handful of quick retries and shows an error instead.
+  const UNCONFIGURED_POLL_MS = 5000;
+
   function fetchDisplayConfig(attempt) {
     const proto = window.location.protocol === "https:" ? "https:" : "http:";
     fetch(`${proto}//${CONFIG.host}/signalk/v1/applicationData/global/signalk-bignumbers/1`)
       .then((r) => (r.ok ? r.json() : {}))
       .then((data) => {
         const raw = data[displayId];
-        if (!raw) throw new Error(`No saved config for display "${displayId}"`);
+        if (!raw) {
+          showUnconfigured();
+          setTimeout(() => fetchDisplayConfig(0), UNCONFIGURED_POLL_MS);
+          return;
+        }
         const getter = {
           get: (k) => (raw[k] === undefined || raw[k] === null ? null : String(raw[k])),
           has: (k) => raw[k] !== undefined && raw[k] !== null,
@@ -184,11 +221,11 @@
         CONFIG = buildConfig(getter);
         start();
       })
-      .catch((err) => {
+      .catch(() => {
         if (attempt < 5) {
           setTimeout(() => fetchDisplayConfig(attempt + 1), CONFIG.reconnectMs);
         } else {
-          showError(err.message);
+          showError(`Can't reach SignalK at ${CONFIG.host}`);
         }
       });
   }
