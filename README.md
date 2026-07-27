@@ -43,8 +43,10 @@ sudo systemctl restart signalk    # or however your server is run
 4. The display picks it up within about 5 seconds. No restart, no SSH.
 
 Two or three values split the screen into equal horizontal bands, top to
-bottom in the order they're listed. They share one set of colours, and all
-render at the same digit size so the screen reads as one instrument.
+bottom in the order they're listed. Each band has its own colours, and all
+render at the same digit size so the screen reads as one instrument. Where
+two neighbouring bands share a background a hairline divides them; where
+the background changes, the change of colour is the divide.
 
 Configs live in signalk-server's built-in `applicationData` store, keyed
 by hostname. Displays read it anonymously; saving requires a SignalK
@@ -68,7 +70,7 @@ instrument.html?path=environment.wind.speedApparent&name=AWS&layout=xx.xx&unit=k
 | `neg` | `true` to reserve room for a minus sign |
 | `unit` | Label shown after the number |
 | `factor`, `offset` | Unit conversion: `shown = raw * factor + offset` |
-| `bg`, `fg` | Theme colours (whole screen) |
+| `bg`, `fg` | Theme colours for this value's band; unsuffixed they also set the screen's |
 | `host` | SignalK server, if not the one serving the page (whole screen) |
 | `display` | Stored-config identifier — used *instead of* all of the above |
 
@@ -83,9 +85,13 @@ instrument.html?path=navigation.speedOverGround&name=SOG&layout=xx.x&unit=kt&fac
                &path3=navigation.attitude&field3=roll&name3=Heel&layout3=xx&neg3=true&unit3=%C2%B0&factor3=57.29577951308232
 ```
 
-A missing `path2` ends the list, so values can't have gaps. `bg`, `fg`,
-`host` and `display` belong to the display as a whole and are never
-suffixed.
+A missing `path2` ends the list, so values can't have gaps. `host` and
+`display` belong to the display as a whole and are never suffixed.
+
+`bg` and `fg` do double duty: suffixed (`bg2`, `fg3`) they colour just
+that band, and unsuffixed they set both the first band's colours and the
+screen's — the latter being what shows behind the "not configured" and
+error screens, which exist before there are any bands.
 
 The webapp's **Preview** button builds these URLs for you.
 

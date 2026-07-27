@@ -235,7 +235,7 @@
 </head>
 <body>
 <main>
-  <h1>SignalK Displays <span class="version">v0.1.0</span></h1>
+  <h1>SignalK Displays <span class="version">v0.2.0</span></h1>
 
   <div class="authbar">
     <span id="authState">Not logged in</span>
@@ -280,16 +280,13 @@
       large text on its screen.
     </div>
 
-    <label>
-      Colours
-      <select id="theme"></select>
-    </label>
-
     <div id="slots" class="stack"></div>
     <button type="button" class="secondary small" id="addSlotBtn">+ Add another number</button>
     <div class="hint">
       Up to three values, stacked in equal bands down the screen in this
-      order. They all share the colours above.
+      order, each with its own colours. The first value's colours are also
+      the screen's, so they show behind the "not configured" and error
+      messages.
     </div>
 
     <div class="buttons">
@@ -327,6 +324,10 @@
       <label>
         Instrument
         <select data-f="preset"></select>
+      </label>
+      <label>
+        Colours
+        <select data-f="theme"></select>
       </label>
       <label>
         Display name
@@ -580,9 +581,6 @@
   }
 
   // --- editor view ------------------------------------------------------
-  const themeSelect = el("theme");
-  THEMES.forEach((t, i) => themeSelect.appendChild(new Option(t.name, i)));
-
   // Which code is being edited, or null when creating a new one. Editing
   // keeps the code fixed so changing it can't silently create a duplicate
   // entry instead of renaming the one you opened.
@@ -606,11 +604,6 @@
     slots = [];
     // A brand new display starts with one slot on the default preset.
     (cfg ? itemsOf(cfg).slice(0, MAX_ITEMS) : [null]).forEach((item) => addSlot(item));
-
-    // Set here rather than per slot -- colours belong to the display, and
-    // picking a different instrument shouldn't reset them.
-    const theme = THEMES.findIndex((t) => t.bg === cfg?.bg && t.fg === cfg?.fg);
-    themeSelect.value = String(theme >= 0 ? theme : 0);
     updateKioskUrl();
   }
 
@@ -634,6 +627,9 @@
       if (presetSelect.value !== "custom") applyConfig(slot, PRESETS[presetSelect.value]);
     });
 
+    const themeSelect = slot.f("theme");
+    THEMES.forEach((t, i) => themeSelect.appendChild(new Option(t.name, i)));
+
     slot.f("remove").addEventListener("click", () => {
       root.remove();
       slots = slots.filter((s) => s !== slot);
@@ -647,6 +643,10 @@
     applyConfig(slot, item);
     const match = PRESETS.findIndex((p) => p.path === item.path && (p.field || "") === (item.field || ""));
     presetSelect.value = match >= 0 ? String(match) : "custom";
+    // Set here rather than in applyConfig, which the preset dropdown also
+    // calls -- picking a different instrument shouldn't reset the colours.
+    const theme = THEMES.findIndex((t) => t.bg === item.bg && t.fg === item.fg);
+    themeSelect.value = String(theme >= 0 ? theme : 0);
     renumberSlots();
   }
 
@@ -672,11 +672,15 @@
   }
 
   // One value in the shape instrument.html reads, whether from this store
-  // or from URL params: path/name/layout/neg always, the rest only when
-  // meaningful.
+  // or from URL params: path/name/layout/neg and the colours always, the
+  // rest only when meaningful.
   function slotConfig(slot) {
     const v = (key) => slot.f(key).value.trim();
-    const item = { path: v("path"), name: v("name"), layout: v("layout") || "x", neg: v("neg") === "true" };
+    const theme = THEMES[slot.f("theme").value] || THEMES[0];
+    const item = {
+      path: v("path"), name: v("name"), layout: v("layout") || "x", neg: v("neg") === "true",
+      bg: theme.bg, fg: theme.fg,
+    };
     if (v("field")) item.field = v("field");
     if (v("unit")) item.unit = v("unit");
     if (v("factor") && v("factor") !== "1") item.factor = parseFloat(v("factor"));
@@ -684,10 +688,12 @@
     return item;
   }
 
-  // Colours belong to the whole display; everything else is per value.
+  // Every value carries its own colours. The first value's are mirrored to
+  // the top level as the display's own: they back the "not configured" and
+  // error screens, which exist before there are any bands to colour.
   function currentConfig() {
-    const theme = THEMES[themeSelect.value] || THEMES[0];
-    return { bg: theme.bg, fg: theme.fg, items: slots.map(slotConfig) };
+    const items = slots.map(slotConfig);
+    return { bg: items[0].bg, fg: items[0].fg, items };
   }
 
   function updateKioskUrl() {

@@ -36,8 +36,19 @@ existed; `itemsOf()`/the `Array.isArray` check in `fetchDisplayConfig`
 read it as a one-value config. Don't drop those paths — they're the
 upgrade story for anything already deployed.
 
-`bg`, `fg`, `host` and `display` belong to the display as a whole and are
-never suffixed or per-item.
+`host` and `display` belong to the display as a whole and are never
+suffixed or per-item.
+
+`bg`/`fg` are deliberately both: they're in `ITEM_KEYS` (so `bg2`/`fg3`
+colour one band) *and* read at display level. Unsuffixed they mean both
+the first band's colours and the page's, which are the same thing — the
+editor mirrors value 1's theme to the top level for exactly this. The
+page-level pair is what backs the "not configured" and error screens,
+which exist before any cell does, so don't drop it in favour of per-item
+only. `.cell` re-declares `background`/`color` from the variables rather
+than inheriting body's computed values, which is what lets a per-band
+override cascade to the opacity-derived title/unit and the
+`currentColor` divider.
 
 All bands render at the same digit size: `fitDisplay()` takes the `min`
 scale across every cell so the screen reads as one instrument. Each cell
@@ -77,7 +88,7 @@ tooling to generate a lockfile-driven ignore list from.
 
 ## Versioning
 
-`package.json` `version` and the `v0.1.0` label in `public/index.html`
+`package.json` `version` and the `v0.2.0` label in `public/index.html`
 are both hand-maintained — there's no build step to derive one from the
 other, so bump both together, and tag the release commit (`git tag -a
 X.Y.Z`).

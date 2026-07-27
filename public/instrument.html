@@ -56,6 +56,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Re-resolved here, not just inherited from body, so a band that sets
+       its own --bg/--fg re-themes everything inside it: the digits, the
+       opacity-derived title and unit, and the currentColor rule below. */
+    background: var(--bg);
+    color: var(--fg);
   }
   .cell + .cell::before {
     content: "";
@@ -66,6 +71,11 @@
     height: 1px;
     background: currentColor;
     opacity: 0.15;
+  }
+  /* Where two bands have different backgrounds the colour change is already
+     the boundary, and a hairline on top of it just reads as grubbiness. */
+  .cell.recoloured::before {
+    content: none;
   }
   .title {
     /* Absolute, not fixed: it belongs to its band. With a single value the
@@ -183,7 +193,9 @@
   const MAX_ITEMS = 3;
   // The per-value keys, as they appear both in a stored config and (with
   // the 2/3 suffix for the second and third value) in the query string.
-  const ITEM_KEYS = ["path", "field", "name", "factor", "offset", "unit", "layout", "neg"];
+  // bg/fg are here as well as at display level: unsuffixed they mean both
+  // the page's colours and the first value's, which are the same thing.
+  const ITEM_KEYS = ["path", "field", "name", "factor", "offset", "unit", "layout", "neg", "bg", "fg"];
 
   function num(v, fallback) {
     const n = parseFloat(v);
@@ -203,6 +215,8 @@
       offset: num(raw.offset, 0),   // unit conversion offset (e.g. Kelvin -> Celsius)
       unit: raw.unit || "",         // unit label after the number
       expectNegative: raw.neg === true || raw.neg === "true", // reserve a sign column?
+      bg: raw.bg || null,           // this band's background, else the display's
+      fg: raw.fg || null,           // this band's foreground, else the display's
       intDigits: intPart.length,    // "xx.x" -> 2 integer digits, 1 decimal
       decimals: decPart ? decPart.length : 0,
     };
@@ -287,6 +301,10 @@
     cells = CONFIG.items.map((cfg) => {
       const el = document.createElement("div");
       el.className = "cell";
+      // Only set when this band overrides the display's colours, so an
+      // unthemed band keeps inheriting and there's one place to change.
+      if (cfg.bg) el.style.setProperty("--bg", cfg.bg);
+      if (cfg.fg) el.style.setProperty("--fg", cfg.fg);
       const titleEl = document.createElement("div");
       titleEl.className = "title";
       titleEl.textContent = cfg.name;
@@ -311,6 +329,13 @@
         placeholderValue: "-".repeat(cfg.intDigits) +
           (cfg.decimals > 0 ? "." + "-".repeat(cfg.decimals) : ""),
       };
+    });
+
+    // Drop the divider above any band whose background differs from the one
+    // above it -- there, the change of colour is the boundary.
+    const bandBg = (i) => CONFIG.items[i].bg || CONFIG.bg || null;
+    cells.forEach((c, i) => {
+      if (i > 0 && bandBg(i) !== bandBg(i - 1)) c.el.classList.add("recoloured");
     });
   }
 

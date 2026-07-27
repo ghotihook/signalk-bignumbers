@@ -134,10 +134,14 @@ listed, and all render at the same digit size. The kiosk URL doesn't
 change — the Pi still just asks for `?display=<hostname>` — so going from
 one number to three is a save in the webapp, nothing on the Pi.
 
-**Colours** offers a few fixed high-contrast pairs, set per display. Red
+**Colours** offers a few fixed high-contrast pairs, set per value. Red
 or amber on black preserve night vision at the helm; black on white or
 black on amber read better in direct sun. Each display can differ, so a
-cockpit screen and a nav-station screen don't have to match.
+cockpit screen and a nav-station screen don't have to match — and on a
+multi-value screen one band can differ from its neighbours, to pick out
+the number you most want to catch your eye. Worth using sparingly: mixed
+backgrounds cost some of the dark adaptation the night themes exist to
+protect.
 
 Displays pick up changes on their own — an unconfigured one polls every
 5s waiting for a config to appear, and a running one re-checks its own
