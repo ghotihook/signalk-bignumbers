@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SignalK Instrument Picker</title>
+<style>
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: #111;
+    color: #eee;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  body {
+    display: flex;
+    justify-content: center;
+    padding: 3rem 1rem;
+  }
+  form {
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  h1 {
+    font-size: 1.3rem;
+    margin: 0 0 0.5rem;
+  }
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: 0.85rem;
+    color: #aaa;
+  }
+  input, select {
+    font-size: 1rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #1c1c1c;
+    color: #eee;
+  }
+  .advanced {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+  .advanced label {
+    grid-column: span 1;
+  }
+  details summary {
+    cursor: pointer;
+    color: #aaa;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+  }
+  .url-box {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 0.85rem;
+    word-break: break-all;
+    background: #1c1c1c;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 0.75rem;
+    color: #9c9;
+  }
+  .buttons {
+    display: flex;
+    gap: 0.75rem;
+  }
+  button, .btn {
+    font-size: 1rem;
+    padding: 0.6rem 1rem;
+    border-radius: 6px;
+    border: none;
+    background: #2a6;
+    color: #fff;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    flex: 1;
+  }
+  button.secondary {
+    background: #333;
+  }
+</style>
+</head>
+<body>
+<form id="form" onsubmit="return false;">
+  <h1>SignalK Instrument Picker</h1>
+
+  <label>
+    Host:Port
+    <input id="host">
+  </label>
+
+  <label>
+    Instrument
+    <select id="preset"></select>
+  </label>
+
+  <label>
+    Display name
+    <input id="name">
+  </label>
+
+  <details>
+    <summary>Advanced (path / conversion / format)</summary>
+    <div class="advanced">
+      <label>Path <input id="path"></label>
+      <label>Field <input id="field" placeholder="(none)"></label>
+      <label>Factor <input id="factor" type="number" step="any"></label>
+      <label>Offset <input id="offset" type="number" step="any"></label>
+      <label>Unit <input id="unit"></label>
+      <label>Layout <input id="layout" placeholder="xx.xx"></label>
+      <label>
+        Negative
+        <select id="neg">
+          <option value="false">No</option>
+          <option value="true">Yes</option>
+        </select>
+      </label>
+    </div>
+  </details>
+
+  <div class="url-box" id="urlBox"></div>
+
+  <div class="buttons">
+    <a class="btn" id="openBtn" target="_blank">Open</a>
+    <button type="button" class="secondary" id="copyBtn">Copy URL</button>
+  </div>
+</form>
+
+<script>
+  // Standard SignalK paths with recommended conversion + display format.
+  // factor/offset convert SignalK's SI-unit value into the shown unit:
+  // scaled = raw * factor + offset
+  const PRESETS = [
+    { label: "Apparent Wind Speed (AWS)", name: "AWS", path: "environment.wind.speedApparent", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.xx", neg: false },
+    { label: "True Wind Speed (TWS)", name: "TWS", path: "environment.wind.speedTrue", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.xx", neg: false },
+    { label: "Apparent Wind Angle (AWA)", name: "AWA", path: "environment.wind.angleApparent", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: true },
+    { label: "True Wind Angle (TWA)", name: "TWA", path: "environment.wind.angleTrueGround", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: true },
+    { label: "True Wind Direction (TWD)", name: "TWD", path: "environment.wind.directionTrue", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
+    { label: "Speed Over Ground (SOG)", name: "SOG", path: "navigation.speedOverGround", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.xx", neg: false },
+    { label: "Speed Through Water (STW)", name: "STW", path: "navigation.speedThroughWater", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.xx", neg: false },
+    { label: "Course Over Ground (COG)", name: "COG", path: "navigation.courseOverGroundTrue", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
+    { label: "Heading True (HDG-T)", name: "HDG", path: "navigation.headingTrue", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
+    { label: "Heading Magnetic (HDG-M)", name: "HDG", path: "navigation.headingMagnetic", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
+    { label: "Roll", name: "Roll", path: "navigation.attitude", field: "roll", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
+    { label: "Heel", name: "Heel", path: "navigation.attitude", field: "roll", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
+    { label: "Pitch / Trim", name: "Trim", path: "navigation.attitude", field: "pitch", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
+    { label: "Rudder Angle", name: "Rudder", path: "steering.rudderAngle", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
+    { label: "Depth Below Transducer", name: "Depth", path: "environment.depth.belowTransducer", factor: 1, offset: 0, unit: "m", layout: "xx.x", neg: false },
+    { label: "Depth Below Keel", name: "DBK", path: "environment.depth.belowKeel", factor: 1, offset: 0, unit: "m", layout: "xx.x", neg: false },
+    { label: "Depth Below Surface", name: "DBS", path: "environment.depth.belowSurface", factor: 1, offset: 0, unit: "m", layout: "xx.x", neg: false },
+    { label: "Water Temperature", name: "SEA", path: "environment.water.temperature", factor: 1, offset: -273.15, unit: "°C", layout: "xx.x", neg: true },
+    { label: "Outside Air Temperature", name: "AIR", path: "environment.outside.temperature", factor: 1, offset: -273.15, unit: "°C", layout: "xx.x", neg: true },
+    { label: "Trip Log", name: "TRIP", path: "navigation.trip.log", factor: 0.0005399568034557235, offset: 0, unit: "nm", layout: "xxx.x", neg: false },
+    { label: "Total Log", name: "LOG", path: "navigation.log", factor: 0.0005399568034557235, offset: 0, unit: "nm", layout: "xxxxx.x", neg: false },
+    { label: "GNSS Satellites in View", name: "SATS", path: "navigation.gnss.satellites", factor: 1, offset: 0, unit: "", layout: "xx", neg: false },
+    { label: "Battery Voltage (instance 0)", name: "BATT", path: "electrical.batteries.0.voltage", factor: 1, offset: 0, unit: "V", layout: "xx.x", neg: false },
+  ];
+
+  const el = (id) => document.getElementById(id);
+  const presetSelect = el("preset");
+
+  PRESETS.forEach((p, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = p.label;
+    presetSelect.appendChild(opt);
+  });
+
+  function applyPreset(p) {
+    el("name").value = p.name;
+    el("path").value = p.path;
+    el("field").value = p.field || "";
+    el("factor").value = p.factor;
+    el("offset").value = p.offset;
+    el("unit").value = p.unit;
+    el("layout").value = p.layout;
+    el("neg").value = String(p.neg);
+    updateUrl();
+  }
+
+  // Directory this page lives in, so the generated link works whether it's
+  // opened straight from disk or hosted by SignalK under /<webapp-name>/.
+  function instrumentBaseUrl() {
+    const dir = window.location.pathname.replace(/[^/]*$/, "");
+    return `${window.location.origin}${dir}instrument.html`;
+  }
+
+  function updateUrl() {
+    const params = new URLSearchParams();
+    params.set("host", el("host").value.trim());
+    params.set("path", el("path").value.trim());
+    if (el("field").value.trim()) params.set("field", el("field").value.trim());
+    params.set("name", el("name").value.trim());
+    params.set("layout", el("layout").value.trim() || "x");
+    params.set("neg", el("neg").value);
+    if (el("unit").value.trim()) params.set("unit", el("unit").value.trim());
+    if (el("factor").value && el("factor").value !== "1") params.set("factor", el("factor").value);
+    if (el("offset").value && el("offset").value !== "0") params.set("offset", el("offset").value);
+
+    const url = `${instrumentBaseUrl()}?${params.toString()}`;
+    el("urlBox").textContent = url;
+    el("openBtn").href = url;
+    return url;
+  }
+
+  presetSelect.addEventListener("change", () => applyPreset(PRESETS[presetSelect.value]));
+  form.addEventListener("input", updateUrl);
+
+  el("copyBtn").addEventListener("click", () => {
+    navigator.clipboard.writeText(updateUrl());
+  });
+
+  el("host").value = window.location.host || "hl.local:3000";
+  applyPreset(PRESETS[0]);
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "signalk-bignumbers",
+  "version": "0.1.0",
+  "description": "Big, fixed-width numeric instrument displays for SignalK, configured via URL and picked from a simple built-in webapp.",
+  "keywords": [
+    "signalk-webapp",
+    "signalk"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ghotihook/signalk-bignumbers.git"
+  }
+}
