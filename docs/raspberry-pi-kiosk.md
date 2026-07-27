@@ -66,13 +66,13 @@ make it permanent below.
 sudo systemctl disable getty@tty1.service
 ```
 
-**Create the service** at `/etc/systemd/system/cog-kiosk.service`, with
-the same URL you tested above. `%H` is a systemd specifier for the
+**Create the service** at `/etc/systemd/system/signalk-display.service`,
+with the same URL you tested above. `%H` is a systemd specifier for the
 hostname, so this file is identical on every Pi:
 
 ```ini
 [Unit]
-Description=Cog kiosk browser
+Description=SignalK instrument display
 After=systemd-user-sessions.service getty@tty1.service network-online.target
 Wants=network-online.target
 Conflicts=getty@tty1.service
@@ -104,16 +104,16 @@ consoleblank=0
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now cog-kiosk.service
+sudo systemctl enable --now signalk-display.service
 sudo reboot
 ```
 
 To check on it:
 
 ```bash
-systemctl status cog-kiosk.service
-journalctl -u cog-kiosk -f
-systemctl show cog-kiosk -p ExecStart   # confirm %H expanded to the hostname
+systemctl status signalk-display.service
+journalctl -u signalk-display -f
+systemctl show signalk-display -p ExecStart   # confirm %H expanded to the hostname
 ```
 
 ## Managing displays
@@ -132,11 +132,11 @@ under a new code.
 Displays pick up changes on their own — an unconfigured one polls every
 5s waiting for a config to appear, and a running one re-checks its own
 config every 5s, reloading if it changed. So saving takes effect within a
-few seconds, and `systemctl restart cog-kiosk` is never needed to change
-what a display shows. Deleting an entry sends that display back to
-showing its code, ready to be reassigned. A Pi's local config only needs
-to change at all if you're pointing it at a different SignalK server, or
-swapping which code that Pi answers to.
+few seconds, and restarting the service is never needed to change what a
+display shows. Deleting an entry sends that display back to showing its
+code, ready to be reassigned. A Pi's local config only needs to change at
+all if you're pointing it at a different SignalK server, or swapping
+which code that Pi answers to.
 
 ---
 
@@ -165,7 +165,7 @@ first or the two fight over the display — DRM master isn't tied to which
 tty your SSH session is on:
 
 ```bash
-sudo systemctl stop cog-kiosk
+sudo systemctl stop signalk-display
 ```
 
 ### Verifying GPU acceleration
