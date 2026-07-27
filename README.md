@@ -4,15 +4,78 @@ Big, high-contrast number displays for [SignalK](https://signalk.org) —
 mast and repeater screens for racing, showing one, two or three values
 large enough to read from the rail.
 
+![A Raspberry Pi driving an HDMI screen: the label STW, the number 0.0 filling the screen, and the unit kt, black on pale blue](docs/images/display-hdmi.jpg)
+
 It is deliberately **not an MFD**: no charts, no gauges, no graphs or
 history, nothing to touch. Just the numbers, as large, as current and as
 legible as the screen allows, for someone who has half a second to look
 up mid-manoeuvre.
 
-Each display is a cheap Raspberry Pi with an HDMI screen, running nothing
-but a fullscreen browser. It knows only its own hostname; what it shows
-is stored on the SignalK server and managed from a web page, so
-reconfiguring a screen never means touching the Pi.
+**A display is anything with a browser.** A £15 Raspberry Pi Zero 2 W
+driving an HDMI panel on the mast, an old iPhone in a dry bag, an iPad at
+the nav station, any cheap Android tablet zip-tied to the pushpit — all of
+them run the same page and none of them needs anything installed. There is
+no app, no pairing, no per-device software: a display is a URL.
+
+Each one knows only the name in that URL. What it shows is stored on the
+SignalK server and managed from a web page, so reconfiguring a screen
+never means touching the screen.
+
+## Every screen on one page
+
+![The webapp's display list: three rows — mast1 showing STW, mast2 showing TWA, and phone showing STW, TWA and TWS — each with Edit and Delete buttons](docs/images/webapp-displays.png)
+
+That's the entire management interface. One row per screen, showing what
+it displays right now; **Edit** changes it, and the screen picks the
+change up within about 5 seconds. Nothing to SSH into, no config file on
+any Pi, no restart.
+
+A display is identified by a name it asks for in its URL — on a kiosk Pi
+that's its hostname, filled in by systemd, so every Pi runs a byte-for-byte
+identical service file and its identity comes from the name you gave the
+machine.
+
+A display with no entry in that list says so, in text you can read from
+the same distance as the numbers:
+
+![A Pi HDMI screen showing the hostname mast1 in large text, above the line "Not configured yet — add this hostname in the SignalK Displays webapp"](docs/images/display-unconfigured.jpg)
+
+So commissioning a screen is: plug it in, read the name off it, add that
+name to the list. No keyboard, no SSH, no serial console — the device
+tells you what it wants to be called and the rest happens in a browser.
+
+## The display is a URL
+
+The instrument is a single static HTML page with no build step, no
+framework and no dependencies, so the hardware requirement is "runs a
+browser from this decade":
+
+| Display | How it opens the page |
+|---|---|
+| **Raspberry Pi Zero 2 W** + HDMI panel | boots straight into it fullscreen, hostname as its name ([guide](docs/raspberry-pi-kiosk.md)) |
+| **iPhone / iPad** | open the URL in Safari and **Add to Home Screen**, so it's one tap from the lock screen |
+| **Android phone or cheap tablet** | same, via Chrome's **Add to Home screen** |
+| **Laptop at the nav station** | any browser, fullscreen with `F11` |
+
+Nothing is installed on any of them. Below is the `phone` row from the
+list above — the same page the mast Pis are running, against a different
+stored config:
+
+<img src="docs/images/display-phone.png" alt="A phone showing three stacked bands: STW 0.0 kt white on black, TWA 13° black on white, TWS 16.2 kt white on black" width="260">
+
+Going from one number to three was **+ Add another number** in the
+webapp. Nothing on the phone was touched to make it happen, and nothing
+would need touching to turn it back into a single big TWA.
+
+A retired phone is a genuinely good repeater: a bright, sharp,
+battery-backed screen you already own, and if it goes over the side you
+are out a phone you had stopped using. The mast wants a Pi Zero 2 W
+instead, because a screen up there has to survive rain and come back on
+its own after the power blinks.
+
+On a phone or tablet, set the screen to never auto-lock and turn the
+brightness up. The page holds no wake-lock, so an idle timeout is the one
+thing that will quietly take a repeater off the air mid-leg.
 
 ## What's here
 
@@ -38,12 +101,14 @@ sudo systemctl restart signalk    # or however your server is run
 
 ## How a display gets configured
 
-1. A Pi boots into `instrument.html?display=<its-hostname>` (see the
-   [kiosk setup guide](docs/raspberry-pi-kiosk.md)).
-2. With nothing stored for that hostname, the screen shows the hostname
-   in large text.
-3. In the webapp, add that hostname, choose an instrument and colours,
-   and save. **+ Add another number** puts a second or third value on the
+1. A screen opens `instrument.html?display=<name>` — a Pi boots into it
+   with its hostname (see the [kiosk setup
+   guide](docs/raspberry-pi-kiosk.md)); a phone or laptop just bookmarks
+   the URL with a name you pick.
+2. With nothing stored under that name, the screen shows the name in
+   large text.
+3. In the webapp, add that name, choose an instrument and colours, and
+   save. **+ Add another number** puts a second or third value on the
    same screen.
 4. The display picks it up within about 5 seconds. No restart, no SSH.
 
@@ -54,7 +119,7 @@ two neighbouring bands share a background a hairline divides them; where
 the background changes, the change of colour is the divide.
 
 Configs live in signalk-server's built-in `applicationData` store, keyed
-by hostname. Displays read it anonymously; saving requires a SignalK
+by that name. Displays read it anonymously; saving requires a SignalK
 login, which the webapp prompts for.
 
 ## Reading the screen

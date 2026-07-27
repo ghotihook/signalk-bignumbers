@@ -8,6 +8,22 @@ read from several metres away, showing nothing but the numbers. Everything
 below is chosen for that — straight to the framebuffer, no compositor, no
 input devices, nothing between the SignalK delta and the glass.
 
+**A Pi is only one way to get a display.** The instrument is a plain web
+page, so an iPhone, an iPad, an old Android tablet or a laptop is a
+display the moment you open the URL on it — nothing to install, and they
+are managed from the same list as the Pis. Use this guide when you want a
+screen that is *permanent*: one that comes up by itself on power, has no
+battery to charge or lock screen to swipe past, and can be left on the
+mast in the rain. For everything else, just open the URL:
+
+```
+http://signalk.local:3000/signalk-bignumbers/instrument.html?display=phone
+```
+
+and add `phone` (or whatever name you used) in the webapp. On iOS or
+Android, **Add to Home Screen** makes it a one-tap launch, and turning
+off the screen auto-lock keeps it up.
+
 Written for a Pi Zero 2 W with an HDMI screen, running Raspberry Pi OS
 (Trixie) console-only. Everything below runs on the Pi over SSH.
 
@@ -38,9 +54,14 @@ Run it by hand first — no config files, nothing permanent:
 cog --platform=drm "http://signalk.local:3000/signalk-bignumbers/instrument.html?display=$(hostname)"
 ```
 
-The HDMI screen should show the Pi's hostname in large text. That's a
-display saying "I have no config yet" — which is exactly right, and it
-means cog, the GPU and the network path to SignalK are all working.
+The HDMI screen should show the Pi's hostname in large text:
+
+![The Pi's HDMI screen showing the hostname mast1 in large pale blue text on dark blue, above the line "Not configured yet — add this hostname in the SignalK Displays webapp"](images/display-unconfigured.jpg)
+
+That's a display saying "I have no config yet" — which is exactly right,
+and it means cog, the GPU and the network path to SignalK are all
+working. It also tells you the name to type into the webapp in the next
+step.
 
 `Ctrl+C` stops it. Leave it running for the next step.
 
@@ -59,9 +80,15 @@ hostname. Nothing is stored yet, so:
    pick the instrument, and **Save**. **Preview** opens the config in a
    new tab first if you want to eyeball it before saving.
 
+![The webapp's display list, with rows for mast1, mast2 and phone showing the instruments each is displaying](images/webapp-displays.png)
+
 Within about 5 seconds the kiosk screen should switch from its hostname
-to the instrument. If it does, you're done experimenting — `Ctrl+C` and
-make it permanent below.
+to the instrument:
+
+![The Pi's HDMI screen filled by the number 0.0, labelled STW and kt, black on pale blue](images/display-hdmi.jpg)
+
+If it does, you're done experimenting — `Ctrl+C` and make it permanent
+below.
 
 ## 4. Start it automatically at boot
 
@@ -129,9 +156,14 @@ takes whatever it's given. What that hostname shows lives on the SignalK
 server, in signalk-server's built-in `applicationData` store, so changing
 a display never means SSHing into the Pi again.
 
+Phones, tablets and laptops appear in the same list and work the same
+way; their name is whatever you put in the URL rather than something
+systemd fills in, so a mixed fleet of mast Pis and borrowed phones is
+managed from one page with no distinction between them.
+
 In the webapp's list, **Edit** and **Delete** manage existing entries. A
-display's hostname is fixed once created — to point a different Pi at an
-instrument, delete the entry and add that Pi's hostname instead.
+display's name is fixed once created — to point a different device at an
+instrument, delete the entry and add that device's name instead.
 
 **+ Add another number** puts a second or third value on the same screen.
 They split it into equal horizontal bands, top to bottom in the order
