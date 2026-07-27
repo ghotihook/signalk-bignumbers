@@ -138,13 +138,15 @@ off the physical screen (no SSH needed) and register it:
    pick the instrument, and **Save**. **Preview** opens the config in a
    new tab first if you want to eyeball it before saving.
 
-An unconfigured display polls every few seconds waiting for its config to
-appear, so it starts showing the instrument on its own within a few
-seconds of saving — no restart needed. Once configured, changing it again
-later still needs `sudo systemctl restart cog-kiosk` on that Pi to pick
-up the new value (only the initial "no config yet" state polls). A Pi's
-local config only needs to change at all if you're pointing it at a
-different SignalK server entirely.
+Displays pick up changes on their own — an unconfigured one polls every
+5s waiting for a config to appear, and a running one re-checks its own
+config every 10s, reloading if it changed. So saving in the picker takes
+effect within a few seconds, and `systemctl restart cog-kiosk` is never
+needed to change what a display shows. Deleting a display's entry sends
+it back to showing its code, ready to be reassigned.
+
+A Pi's local config only needs to change at all if you're pointing it at
+a different SignalK server entirely.
 
 Back on the list, **Edit** and **Delete** manage existing entries. A
 display's code is fixed once created — to change it, delete the entry and

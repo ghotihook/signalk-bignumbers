@@ -202,10 +202,15 @@
   // restart needed. A genuine network/server problem still gives up after
   // a handful of quick retries and shows an error instead.
   const UNCONFIGURED_POLL_MS = 5000;
+  const CONFIG_POLL_MS = 10000;
+
+  function configUrl() {
+    const proto = window.location.protocol === "https:" ? "https:" : "http:";
+    return `${proto}//${CONFIG.host}/signalk/v1/applicationData/global/signalk-bignumbers/1`;
+  }
 
   function fetchDisplayConfig(attempt) {
-    const proto = window.location.protocol === "https:" ? "https:" : "http:";
-    fetch(`${proto}//${CONFIG.host}/signalk/v1/applicationData/global/signalk-bignumbers/1`)
+    fetch(configUrl())
       .then((r) => (r.ok ? r.json() : {}))
       .then((data) => {
         const raw = data[displayId];
@@ -220,6 +225,7 @@
         };
         CONFIG = buildConfig(getter);
         start();
+        watchForConfigChanges(JSON.stringify(raw));
       })
       .catch(() => {
         if (attempt < 5) {
@@ -228,6 +234,23 @@
           showError(`Can't reach SignalK at ${CONFIG.host}`);
         }
       });
+  }
+
+  // Keep watching the stored config once running, so a change made in the
+  // picker takes effect on its own with no restart. Reloading re-runs the
+  // whole load path, which covers every case for free -- including the
+  // config being deleted, which lands back on the "show my code" screen.
+  // A failed poll is ignored: only a genuinely different config reloads,
+  // so a network blip can't cause a reload loop.
+  function watchForConfigChanges(loadedJson) {
+    setInterval(() => {
+      fetch(configUrl())
+        .then((r) => (r.ok ? r.json() : {}))
+        .then((data) => {
+          if (JSON.stringify(data[displayId] || null) !== loadedJson) window.location.reload();
+        })
+        .catch(() => {});
+    }, CONFIG_POLL_MS);
   }
 
   if (displayId) {
