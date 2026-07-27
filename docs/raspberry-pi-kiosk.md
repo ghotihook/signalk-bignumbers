@@ -199,7 +199,8 @@ the Pi itself.
 shell built for embedded/kiosk use. Its DRM/KMS backend
 (`--platform=drm`) renders directly to the framebuffer via the GPU — no
 X11, no Wayland compositor, no window manager. That matters on a Zero
-2 W's 512MB RAM.
+2 W's 512MB RAM, and it keeps a compositor out of the path between the
+delta arriving and the number changing.
 
 The tradeoff: it's WebKit, not Chromium, and the CLI/config surface is
 much smaller. Fine for a self-contained instrument page; worth

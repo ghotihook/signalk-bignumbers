@@ -11,6 +11,10 @@ history, nothing to touch. Just the numbers, as large, as current and as
 legible as the screen allows, for someone who has half a second to look
 up mid-manoeuvre.
 
+Values render the moment each SignalK delta arrives — nothing is
+buffered, batched, rate-limited or smoothed on the way to the screen.
+See [Latency](#latency).
+
 A display is anything with a browser — a Raspberry Pi with an HDMI panel,
 a phone, a tablet, a laptop. They all open the same page, and none of them
 needs anything installed.
@@ -60,6 +64,36 @@ on its own after a power cut and doesn't mind the rain.
 
 Set a phone or tablet to never auto-lock. The page holds no wake-lock, so
 the screen timeout will take it off the air.
+
+## Latency
+
+**Late data is worse than no data.** A number two seconds old that looks
+current is worse than no number at all, because nothing on the screen
+tells you not to trust it. Someone is trimming to it.
+
+So there is as little as possible between the delta arriving and the
+glass lighting up:
+
+- Subscriptions use `policy: "instant"`, with no `period` and no
+  `minPeriod`. Values arrive as they change, not on a timer.
+- Each delta renders synchronously as it arrives. No queue, no
+  `requestAnimationFrame`, no `setTimeout`, no batching.
+- Nothing animates. A tweened number both shows readings the boat never
+  took and shows them late, so value changes carry `transition: none`.
+- No smoothing, averaging or damping in the display. If a path needs
+  damping it belongs upstream in SignalK, where every display reading it
+  gets the same treatment.
+- The socket opens `?subscribe=none` and subscribes only to the paths on
+  screen — no firehose of unrelated JSON to parse through first.
+- No history, replay or backfill. A reconnected display shows the next
+  live value, not what it missed.
+
+The page is static HTML with no framework, no bundler and no
+dependencies, which is what lets a Pi Zero 2 W boot into a live number
+and keep up on 512MB.
+
+If the Pi can't keep up, the fix is fewer values on screen or a slower
+source — never a buffer.
 
 ## What's here
 
@@ -115,14 +149,8 @@ login, which the webapp prompts for.
 
 ## Reading the screen
 
-**Late data is worse than no data.** A number two seconds old that looks
-current is worse than no number at all, because nothing on the screen
-tells you not to trust it. Everything here follows from that.
-
-Values render the instant each SignalK delta arrives — no smoothing, no
-averaging, no rate limiting, no animation between readings, and nothing
-queued or batched on the way to the screen. What's on the mast is what
-the instrument is reading now.
+The same principle from the other side: if a reading can't be trusted,
+the screen has to say so rather than keep showing it.
 
 If a value goes 3 seconds without an update it drops to grey dashes
 rather than holding its last reading, so a dead sensor or a dropped feed
