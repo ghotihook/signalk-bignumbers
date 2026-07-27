@@ -1,6 +1,6 @@
 {
   "name": "signalk-bignumbers",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Big, fixed-width numeric instrument displays for SignalK, configured via URL and picked from a simple built-in webapp.",
   "keywords": [
     "signalk-webapp",

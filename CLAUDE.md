@@ -6,10 +6,15 @@ plain HTML/CSS/JS served as-is. `dev/dummy_signalk.py` is a standalone
 Python dev server for local testing, unrelated to the webapp build.
 
 `instrument.html` supports two config modes: full query-string params
-(`?path=...&name=...`), or `?display=<id>`, which fetches its config from
-SignalK's `applicationData` API — saved there by the picker's "Save to
-SignalK" button. See `docs/raspberry-pi-kiosk.md` for the kiosk-display
-use case this was built for.
+(`?path=...&name=...`), or `?display=<code>`, which fetches its config
+from SignalK's `applicationData` API — written there by `index.html`,
+which is a manager for those stored per-display configs. See
+`docs/raspberry-pi-kiosk.md` for the kiosk-display use case this was
+built for.
+
+Writes to `applicationData` need a SignalK login even when reads are
+anonymous, and the endpoint takes `POST` (not `PUT`) — a `PUT` returns
+401 unauthenticated and 404 once authenticated.
 
 ## .gitignore
 
@@ -20,7 +25,7 @@ generate a lockfile-driven ignore list from.
 
 ## Versioning
 
-`package.json` `version` and the `v0.0.1` label in `public/index.html`
+`package.json` `version` and the `v0.0.2` label in `public/index.html`
 are both hand-maintained — there's no build step to derive one from the
 other, so bump both together, and tag the release commit (`git tag -a
 X.Y.Z`).

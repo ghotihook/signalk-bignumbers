@@ -128,8 +128,8 @@
   //   ?path=navigation.attitude&field=roll&name=Heel&layout=xx&neg=true&unit=%C2%B0&factor=57.29577951308232
   //   ?path=environment.water.temperature&name=SEA&layout=xx.x&unit=%C2%B0C&factor=1&offset=-273.15
   // ...or, for a "dumb" display that never needs its own config touched,
-  // just a display id -- the real config is fetched from SignalK itself:
-  //   ?display=helm
+  // just a display code -- the real config is fetched from SignalK itself:
+  //   ?display=f3a9
   const params = new URLSearchParams(window.location.search);
   const displayId = params.get("display");
 
@@ -146,7 +146,7 @@
       // Defaults to the host that served this page -- once installed as a
       // SignalK webapp that's always the right SignalK server. Override
       // with ?host= to point at a different server (e.g. a test instance).
-      host: p.get("host") || window.location.host || "hl.local:3000",
+      host: p.get("host") || window.location.host,
       path: p.get("path"),                          // SignalK path to subscribe to
       field: p.get("field") || null,                 // key to pull out of a compound object value
       name: p.get("name"),                           // short label + browser tab title
@@ -223,15 +223,13 @@
     run();
   }
 
-  // Fetches this display's config from SignalK's applicationData store
-  // (saved there by the picker page's "Save to SignalK" button), keyed by
-  // display id. A missing config is the normal state for a freshly set-up
-  // display, so that case polls indefinitely (showing the id) rather than
-  // giving up -- it'll pick the config up as soon as it's saved, with no
-  // restart needed. A genuine network/server problem still gives up after
-  // a handful of quick retries and shows an error instead.
-  const UNCONFIGURED_POLL_MS = 5000;
-  const CONFIG_POLL_MS = 5000;
+  // Fetches this display's config from the store the webapp saves to,
+  // keyed by display code. A missing config is the normal state for a
+  // freshly set-up display, so that case polls (showing the code) rather
+  // than giving up -- it picks the config up as soon as it's saved, with
+  // no restart needed. A genuine network/server problem still gives up
+  // after a handful of quick retries and shows an error instead.
+  const POLL_MS = 5000;
 
   function configUrl() {
     const proto = window.location.protocol === "https:" ? "https:" : "http:";
@@ -239,13 +237,16 @@
   }
 
   function fetchDisplayConfig(attempt) {
+    // Two-argument then(), not then().catch() -- the failure handler must
+    // see fetch/parse errors only. Catching errors thrown by the success
+    // handler too would retry it, starting a second websocket.
     fetch(configUrl())
       .then((r) => (r.ok ? r.json() : {}))
       .then((data) => {
         const raw = data[displayId];
         if (!raw) {
           showUnconfigured();
-          setTimeout(() => fetchDisplayConfig(0), UNCONFIGURED_POLL_MS);
+          setTimeout(() => fetchDisplayConfig(0), POLL_MS);
           return;
         }
         const getter = {
@@ -255,8 +256,7 @@
         CONFIG = buildConfig(getter);
         start();
         watchForConfigChanges(JSON.stringify(raw));
-      })
-      .catch(() => {
+      }, () => {
         if (attempt < 5) {
           setTimeout(() => fetchDisplayConfig(attempt + 1), CONFIG.reconnectMs);
         } else {
@@ -277,9 +277,8 @@
         .then((r) => (r.ok ? r.json() : {}))
         .then((data) => {
           if (JSON.stringify(data[displayId] || null) !== loadedJson) window.location.reload();
-        })
-        .catch(() => {});
-    }, CONFIG_POLL_MS);
+        }, () => {});
+    }, POLL_MS);
   }
 
   if (displayId) {

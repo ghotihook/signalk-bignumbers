@@ -118,12 +118,12 @@ journalctl -u cog-kiosk -f   # tail logs
 ## Configuring what a display shows
 
 Each kiosk should stay as dumb as possible: its only local config is
-`KIOSK_URL`, pointing at `instrument.html?display=<id>` — a display id
+`KIOSK_URL`, pointing at `instrument.html?display=<code>` — a code
 derived from its own MAC address (see above), not an instrument. What
-that id actually shows lives on the SignalK server itself, in SignalK's
-built-in [applicationData](https://signalk.org) store, so changing a
-display never means SSHing into the Pi again, and there's no id to invent
-or keep in sync by hand.
+that code actually shows lives on the SignalK server itself, in
+signalk-server's built-in `applicationData` store, so changing a display
+never means SSHing into the Pi again, and there's no id to invent or keep
+in sync by hand.
 
 **A display with no saved config yet shows its own code, large, on
 screen** — that's the normal state right after first boot. Read the code
@@ -138,20 +138,19 @@ off the physical screen (no SSH needed) and register it:
    pick the instrument, and **Save**. **Preview** opens the config in a
    new tab first if you want to eyeball it before saving.
 
-Displays pick up changes on their own — an unconfigured one polls every
-5s waiting for a config to appear, and a running one re-checks its own
-config every 5s, reloading if it changed. So saving in the picker takes
-effect within a few seconds, and `systemctl restart cog-kiosk` is never
-needed to change what a display shows. Deleting a display's entry sends
-it back to showing its code, ready to be reassigned.
-
-A Pi's local config only needs to change at all if you're pointing it at
-a different SignalK server entirely.
-
 Back on the list, **Edit** and **Delete** manage existing entries. A
 display's code is fixed once created — to change it, delete the entry and
 add it again, which keeps an edit from silently creating a duplicate
 under a new code.
+
+Displays pick up changes on their own — an unconfigured one polls every
+5s waiting for a config to appear, and a running one re-checks its own
+config every 5s, reloading if it changed. So saving takes effect within a
+few seconds, and `systemctl restart cog-kiosk` is never needed to change
+what a display shows. Deleting an entry sends that display back to
+showing its code, ready to be reassigned. A Pi's local config only needs
+to change at all if you're pointing it at a different SignalK server, or
+swapping which code that Pi answers to.
 
 ## Disable console blanking
 

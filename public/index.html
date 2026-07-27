@@ -208,7 +208,7 @@
 </head>
 <body>
 <main>
-  <h1>SignalK Displays <span class="version">v0.0.1</span></h1>
+  <h1>SignalK Displays <span class="version">v0.0.2</span></h1>
 
   <div class="authbar">
     <span id="authState">Not logged in</span>
@@ -360,6 +360,10 @@
     el("password").hidden = loggedIn;
     el("authBtn").textContent = loggedIn ? "Log out" : "Log in";
   }
+
+  el("password").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") el("authBtn").click();
+  });
 
   el("authBtn").addEventListener("click", async () => {
     if (token()) {
