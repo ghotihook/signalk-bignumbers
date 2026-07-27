@@ -96,11 +96,68 @@
     color: #aaa;
     min-height: 1em;
   }
+  .list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: #aaa;
+    margin-bottom: 0.5rem;
+  }
+  .list-header button {
+    flex: none;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+  }
+  .display-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .display-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: #1c1c1c;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+  }
+  .display-row .code {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    color: #9c9;
+    font-weight: bold;
+  }
+  .display-row .info {
+    flex: 1;
+    font-size: 0.85rem;
+    color: #ccc;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .display-row button {
+    flex: none;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+  }
+  .list-empty {
+    color: #666;
+    font-size: 0.85rem;
+  }
 </style>
 </head>
 <body>
 <form id="form" onsubmit="return false;">
   <h1>SignalK Instrument Picker <span class="version">v0.0.1</span></h1>
+
+  <div>
+    <div class="list-header">
+      <span>Configured displays</span>
+      <button type="button" class="secondary" id="refreshListBtn">Refresh</button>
+    </div>
+    <div id="displayList" class="display-list"><div class="list-empty">Loading...</div></div>
+  </div>
 
   <label>
     Host:Port
@@ -262,6 +319,10 @@
     return `${window.location.protocol}//${el("host").value.trim()}`;
   }
 
+  function applicationDataUrl() {
+    return `${signalkOrigin()}/signalk/v1/applicationData/global/signalk-bignumbers/1`;
+  }
+
   function updateDisplayUrl() {
     const id = el("displayId").value.trim();
     el("displayUrlBox").textContent = id
@@ -308,25 +369,103 @@
     if (!token) { el("saveStatus").textContent = "Log in first."; return; }
 
     el("saveStatus").textContent = "Saving...";
-    const url = `${signalkOrigin()}/signalk/v1/applicationData/global/signalk-bignumbers/1`;
     try {
-      const current = await fetch(url).then((r) => (r.ok ? r.json() : {}));
+      const current = await fetch(applicationDataUrl()).then((r) => (r.ok ? r.json() : {}));
       current[displayId] = instrumentConfig();
-      const res = await fetch(url, {
+      const res = await fetch(applicationDataUrl(), {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify(current),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       el("saveStatus").textContent = `Saved "${displayId}".`;
+      loadDisplayList();
     } catch (err) {
       el("saveStatus").textContent = `Save failed: ${err.message}`;
     }
   });
 
+  // --- Configured displays list: view/edit/delete every code already
+  // saved in SignalK, reusing the same applicationData document and the
+  // same login token as the save flow above.
+  async function loadDisplayList() {
+    const listEl = el("displayList");
+    try {
+      const res = await fetch(applicationDataUrl());
+      renderDisplayList(res.ok ? await res.json() : {});
+    } catch (err) {
+      listEl.innerHTML = `<div class="list-empty">Couldn't load list: ${err.message}</div>`;
+    }
+  }
+
+  function renderDisplayList(data) {
+    const listEl = el("displayList");
+    const codes = Object.keys(data).sort();
+    if (codes.length === 0) {
+      listEl.innerHTML = '<div class="list-empty">No displays configured yet.</div>';
+      return;
+    }
+    listEl.innerHTML = "";
+    codes.forEach((code) => {
+      const cfg = data[code];
+      const row = document.createElement("div");
+      row.className = "display-row";
+      const info = `${cfg.name || "(no name)"} — ${cfg.path || ""}${cfg.field ? "." + cfg.field : ""}`;
+      row.innerHTML = `
+        <span class="code">${code}</span>
+        <span class="info">${info}</span>
+        <button type="button" class="secondary">Edit</button>
+        <button type="button" class="secondary">Delete</button>
+      `;
+      const [editBtn, deleteBtn] = row.querySelectorAll("button");
+      editBtn.addEventListener("click", () => loadIntoForm(code, cfg));
+      deleteBtn.addEventListener("click", () => deleteDisplay(code));
+      listEl.appendChild(row);
+    });
+  }
+
+  function loadIntoForm(code, cfg) {
+    el("displayId").value = code;
+    el("name").value = cfg.name || "";
+    el("path").value = cfg.path || "";
+    el("field").value = cfg.field || "";
+    el("factor").value = cfg.factor !== undefined ? cfg.factor : 1;
+    el("offset").value = cfg.offset !== undefined ? cfg.offset : 0;
+    el("unit").value = cfg.unit || "";
+    el("layout").value = cfg.layout || "x";
+    el("neg").value = String(!!cfg.neg);
+    updateUrl();
+    updateDisplayUrl();
+  }
+
+  async function deleteDisplay(code) {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) { el("saveStatus").textContent = "Log in first."; return; }
+    if (!confirm(`Delete display "${code}"?`)) return;
+
+    el("saveStatus").textContent = "Deleting...";
+    try {
+      const current = await fetch(applicationDataUrl()).then((r) => (r.ok ? r.json() : {}));
+      delete current[code];
+      const res = await fetch(applicationDataUrl(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify(current),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      el("saveStatus").textContent = `Deleted "${code}".`;
+      loadDisplayList();
+    } catch (err) {
+      el("saveStatus").textContent = `Delete failed: ${err.message}`;
+    }
+  }
+
+  el("refreshListBtn").addEventListener("click", loadDisplayList);
+
   el("host").value = window.location.host || "hl.local:3000";
   applyPreset(PRESETS[0]);
   updateDisplayUrl();
+  loadDisplayList();
 </script>
 </body>
 </html>

@@ -145,6 +145,11 @@ up the new value (only the initial "no config yet" state polls). A Pi's
 local config only needs to change at all if you're pointing it at a
 different SignalK server entirely.
 
+The picker also shows a **Configured displays** list at the top (an
+unauthenticated read, same as the display's own fetch) with every code
+already saved — Edit loads one back into the form to change it, Delete
+removes it. Both still require the same one-time login as Save.
+
 ## Disable console blanking
 
 Append to `/boot/firmware/cmdline.txt` (same line, space-separated, no
