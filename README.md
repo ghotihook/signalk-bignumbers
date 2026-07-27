@@ -96,8 +96,10 @@ times a second. That stays cheap:
 - Past the refresh rate the browser coalesces writes into one paint, so a
   source faster than the panel costs parsing, not drawing.
 
-No framework, no bundler, no dependencies. If a Pi still can't keep up,
-cut values or slow the source — never buffer.
+No framework, no bundler, no dependencies. Measured on a Pi Zero 2 W
+showing one live value: about 3% of the machine, load average 0.06, 216MB
+of 416MB used. If a Pi still can't keep up, cut values or slow the source
+— never buffer.
 
 ## What's here
 

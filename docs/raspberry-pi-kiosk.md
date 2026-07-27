@@ -235,10 +235,20 @@ ls /usr/lib/*/cog/modules/
 
 ### Expected resource usage
 
-On a Zero 2 W (4 cores), steady-state CPU around 25% with load average
-~1 is normal for a live-updating page — roughly one core kept busy
-compositing frames, three idle. Not a sign of trouble by itself; what's
-actually worth checking is that `/dev/dri/renderD128` exists.
+Measured on a Zero 2 W (4 cores) showing one value updating a few times a
+second, with GPU acceleration working:
+
+| | |
+|---|---|
+| WPEWebProcess | 10% of one core |
+| cog | 1% of one core |
+| WPENetworkProcess | 0.5% of one core |
+| load average | 0.06 |
+| memory | 216MB used, 199MB available of 416MB |
+| temperature | 46°C, `throttled=0x0` |
+
+About 3% of the machine, and swap untouched. Well above that usually
+means software rendering — check `/dev/dri/renderD128` exists.
 
 ### The display identifier, and `%` in unit files
 
