@@ -21,16 +21,10 @@ sudo apt install -y cog
 sudo systemctl disable getty@tty1.service
 ```
 
-**3. Set the display URL.** The display code comes from the Pi's own MAC
-address, so there's nothing to invent or keep in sync. Replace
-`hl.local:3000` with your SignalK server:
-
-```bash
-ID=$(cat /sys/class/net/wlan0/address | tr -d ':' | tail -c 5)
-echo "KIOSK_URL=\"http://hl.local:3000/signalk-bignumbers/instrument.html?display=$ID\"" | sudo tee /etc/default/cog-kiosk
-```
-
-**4. Create the service** at `/etc/systemd/system/cog-kiosk.service`:
+**3. Create the service** at `/etc/systemd/system/cog-kiosk.service`,
+replacing `hl.local:3000` with your SignalK server. `%H` is a systemd
+specifier for the hostname — it becomes this display's code, so there's
+nothing to generate or keep in sync:
 
 ```ini
 [Unit]
@@ -47,8 +41,7 @@ TTYVHangup=yes
 StandardInput=tty
 StandardOutput=journal
 StandardError=journal
-EnvironmentFile=/etc/default/cog-kiosk
-ExecStart=/usr/bin/cog --platform=drm "$KIOSK_URL"
+ExecStart=/usr/bin/cog --platform=drm "http://hl.local:3000/signalk-bignumbers/instrument.html?display=%H"
 Restart=always
 RestartSec=2
 
@@ -56,14 +49,14 @@ RestartSec=2
 WantedBy=multi-user.target
 ```
 
-**5. Stop the console blanking.** Append to `/boot/firmware/cmdline.txt`
+**4. Stop the console blanking.** Append to `/boot/firmware/cmdline.txt`
 (same line, space-separated, no newline):
 
 ```
 consoleblank=0
 ```
 
-**6. Start it:**
+**5. Start it:**
 
 ```bash
 sudo systemctl daemon-reload
@@ -71,7 +64,7 @@ sudo systemctl enable --now cog-kiosk.service
 sudo reboot
 ```
 
-After the reboot the screen shows a 4-character code — that's a display
+After the reboot the screen shows the Pi's hostname — that's a display
 with no config yet. Register it using the webapp (next section).
 
 To check on it:
@@ -79,15 +72,16 @@ To check on it:
 ```bash
 systemctl status cog-kiosk.service
 journalctl -u cog-kiosk -f
+systemctl show cog-kiosk -p ExecStart   # confirm %H expanded to the hostname
 ```
 
 ## Configuring what a display shows
 
-Each kiosk stays as dumb as possible: its only local config is
-`KIOSK_URL`, pointing at `instrument.html?display=<code>` — a code, not
-an instrument. What that code shows lives on the SignalK server, in
-signalk-server's built-in `applicationData` store, so changing a display
-never means SSHing into the Pi again.
+Each kiosk stays as dumb as possible: all it knows is its own hostname
+and where the SignalK server is — it asks for `?display=<hostname>` and
+takes whatever it's given. What that code shows lives on the SignalK
+server, in signalk-server's built-in `applicationData` store, so changing
+a display never means SSHing into the Pi again.
 
 **A display with no saved config shows its own code, large, on screen** —
 the normal state right after first boot. Read the code off the physical
@@ -156,18 +150,26 @@ On a Zero 2 W (4 cores), steady-state CPU around 25% with load average
 compositing frames, three idle. Not a sign of trouble by itself; what's
 actually worth checking is that `/dev/dri/renderD128` exists.
 
-### Why the URL is in a separate file
+### The display code, and `%` in unit files
 
-Keeping the URL in `/etc/default/cog-kiosk` rather than inline in
-`ExecStart` means the unit file never needs editing, and it sidesteps two
-escaping traps:
+`%H` works because systemd expands specifiers in `ExecStart` before
+running it. That same expansion is a trap if you ever put a
+full-parameter URL there instead of `?display=`: **any literal `%` must
+be doubled**. A URL-encoded `%3A` breaks unit parsing outright (`Failed
+to resolve unit specifiers`, and the unit won't load at all) unless
+written `%%3A`. The doubling applies only inside the unit file — not when
+running cog from a shell.
 
-- **systemd treats `%` as a specifier prefix.** A literal `%3A` in an
-  `ExecStart` URL breaks unit parsing (`Failed to resolve unit
-  specifiers`, unit won't load) unless doubled to `%%3A`.
-- **Non-ASCII characters can be mangled** if typed on an SSH session
-  that isn't in a UTF-8 locale — cog then rejects the URL as invalid
-  UTF-8. Percent-encode them: `°` is `%C2%B0`.
+Related: **non-ASCII characters can be mangled** if typed on an SSH
+session that isn't in a UTF-8 locale, and cog then rejects the URL as
+invalid UTF-8. Percent-encode them — `°` is `%C2%B0` (`%%C2%%B0` in a
+unit file).
+
+Using the hostname as the code means renaming the Pi changes its code,
+and the display drops back to the unconfigured screen until you register
+the new name. Both are usually what you want. If you'd rather have a code
+that survives a rename, `%m` expands to the machine ID — but it's 32 hex
+characters, which is unpleasant to read off a screen and type in.
 
 ### Running cog by hand
 

@@ -82,10 +82,13 @@
     text-align: center;
   }
   .unconfigured .id {
-    font-size: clamp(3rem, 18vw, 9rem);
+    /* The code is the Pi's hostname, so this has to stay readable for
+       anything from "rpiz" to "raspberrypi" -- wrap rather than clip. */
+    font-size: clamp(2.5rem, 15vw, 8rem);
     font-weight: 500;
-    letter-spacing: 0.1em;
-    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.05em;
+    max-width: 92vw;
+    overflow-wrap: anywhere;
   }
   .unconfigured .hint {
     font-size: clamp(1rem, 2.5vw, 1.5rem);
