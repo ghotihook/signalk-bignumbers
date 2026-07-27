@@ -6,6 +6,18 @@ instrument, with no desktop environment.
 Written for a Pi Zero 2 W with an HDMI screen, running Raspberry Pi OS
 (Trixie) console-only. Everything below runs on the Pi over SSH.
 
+**One thing to substitute throughout:** the examples use
+`signalk.local:3000` as the address of your SignalK server. Replace it
+with your own — it's the same host and port you'd type into a browser to
+reach SignalK's admin UI, e.g. `192.168.1.50:3000` or `mypi.local:3000`.
+The quickest way to be sure: open this webapp in a browser and copy the
+host from the address bar.
+
+Note this is the *SignalK server's* address, not the Pi's. They're
+usually different machines — the Pi is a dumb screen that fetches
+everything from SignalK over the network. They can be the same box if
+SignalK runs on the Pi itself, in which case `localhost:3000` works.
+
 ## 1. Install cog
 
 ```bash
@@ -15,11 +27,10 @@ sudo apt install -y cog
 
 ## 2. Get a picture on the screen
 
-Run it by hand first — no config files, nothing permanent. Replace
-`hl.local:3000` with your SignalK server:
+Run it by hand first — no config files, nothing permanent:
 
 ```bash
-cog --platform=drm "http://hl.local:3000/signalk-bignumbers/instrument.html?display=$(hostname)"
+cog --platform=drm "http://signalk.local:3000/signalk-bignumbers/instrument.html?display=$(hostname)"
 ```
 
 The HDMI screen should show the Pi's hostname in large text. That's a
@@ -33,8 +44,9 @@ means cog, the GPU and the network path to SignalK are all working.
 The display asks SignalK for whatever config is stored under its code
 (here, the hostname). Nothing is stored yet, so:
 
-1. Open the webapp (`index.html`) from any browser on the network — it
-   opens on a list of every display already configured.
+1. Open `http://signalk.local:3000/signalk-bignumbers/` from any browser
+   on the network — the webapp opens on a list of every display already
+   configured. (It's also linked from SignalK's own Webapps menu.)
 2. Log in using the bar at the top. SignalK requires auth for writes even
    when reads are open, so this applies to this page only, never to a
    display. The token is kept in the browser's `localStorage`.
@@ -73,7 +85,7 @@ TTYVHangup=yes
 StandardInput=tty
 StandardOutput=journal
 StandardError=journal
-ExecStart=/usr/bin/cog --platform=drm "http://hl.local:3000/signalk-bignumbers/instrument.html?display=%H"
+ExecStart=/usr/bin/cog --platform=drm "http://signalk.local:3000/signalk-bignumbers/instrument.html?display=%H"
 Restart=always
 RestartSec=2
 
