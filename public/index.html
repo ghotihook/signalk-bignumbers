@@ -322,17 +322,17 @@
   // factor/offset convert SignalK's SI-unit value into the shown unit:
   // scaled = raw * factor + offset
   const PRESETS = [
-    { name: "AWS", path: "environment.wind.speedApparent", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.xx", neg: false },
-    { name: "TWS", path: "environment.wind.speedTrue", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.xx", neg: false },
+    { name: "AWS", path: "environment.wind.speedApparent", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.x", neg: false },
+    { name: "TWS", path: "environment.wind.speedTrue", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.x", neg: false },
     { name: "AWA", path: "environment.wind.angleApparent", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: true },
     { name: "TWA", path: "environment.wind.angleTrueWater", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: true },
     { name: "TWD", path: "environment.wind.directionTrue", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
-    { name: "SOG", path: "navigation.speedOverGround", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.xx", neg: false },
-    { name: "STW", path: "navigation.speedThroughWater", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.xx", neg: false },
+    { name: "SOG", path: "navigation.speedOverGround", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.x", neg: false },
+    { name: "STW", path: "navigation.speedThroughWater", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.x", neg: false },
     { name: "COG", path: "navigation.courseOverGroundTrue", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
     { name: "HDG", path: "navigation.headingTrue", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
     { name: "HDG", path: "navigation.headingMagnetic", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
-    { name: "Roll", path: "navigation.attitude", field: "roll", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
+    { name: "Heel", path: "navigation.attitude", field: "roll", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
     { name: "Trim", path: "navigation.attitude", field: "pitch", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
     { name: "Yaw", path: "navigation.attitude", field: "yaw", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
     { name: "Rudder", path: "steering.rudderAngle", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
