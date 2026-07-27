@@ -41,14 +41,15 @@
   .value-row {
     display: flex;
     align-items: baseline;
+    font-size: 10rem; /* overwritten by fitDisplay() once the page has real dimensions */
   }
   .sign, .value {
-    font-size: clamp(8rem, 32vw, 22rem);
+    font-size: 1em;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
     line-height: 1;
     white-space: pre;
-    -webkit-text-stroke: 1.5px currentColor;
+    -webkit-text-stroke: 0.008em currentColor;
     transition: none;
   }
   .sign {
@@ -66,7 +67,7 @@
     visibility: hidden;
   }
   .unit {
-    font-size: clamp(1.2rem, 3vw, 2.5rem);
+    font-size: 0.15em;
     font-weight: 500;
     color: #999;
     margin-left: 0.4em;
@@ -147,12 +148,41 @@
     run();
   }
 
+  // Measure with real digit glyphs, not the placeholder's dashes -- a
+  // proportional font's "-" isn't guaranteed the same width as its digits,
+  // so fitting against dashes could leave live numbers over- or under-sized.
+  function fitDisplay() {
+    const sampleIntPart = "8".repeat(CONFIG.intDigits);
+    const sampleDecPart = CONFIG.decimals > 0 ? "8".repeat(CONFIG.decimals) : undefined;
+    const prevValueHtml = valueEl.innerHTML;
+    const prevSignText = signEl.textContent;
+    valueEl.textContent = sampleDecPart !== undefined ? `${sampleIntPart}.${sampleDecPart}` : sampleIntPart;
+    signEl.textContent = CONFIG.expectNegative ? "-" : "";
+
+    valueRowEl.style.fontSize = "10rem";
+    const rect = valueRowEl.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      const baseSizePx = parseFloat(getComputedStyle(valueRowEl).fontSize);
+      const availW = window.innerWidth * 0.92;
+      const availH = window.innerHeight * 0.85;
+      const scale = Math.min(availW / rect.width, availH / rect.height);
+      valueRowEl.style.fontSize = `${baseSizePx * scale}px`;
+    }
+
+    valueEl.innerHTML = prevValueHtml;
+    signEl.textContent = prevSignText;
+  }
+
   function run() {
     const PLACEHOLDER_SIGN = CONFIG.expectNegative ? " " : "";
     const PLACEHOLDER_VALUE = "-".repeat(CONFIG.intDigits) +
       (CONFIG.decimals > 0 ? "." + "-".repeat(CONFIG.decimals) : "");
     signEl.textContent = PLACEHOLDER_SIGN;
     valueEl.textContent = PLACEHOLDER_VALUE;
+
+    fitDisplay();
+    document.fonts.ready.then(fitDisplay);
+    window.addEventListener("resize", () => requestAnimationFrame(fitDisplay));
 
     function formatValue(v) {
       const scaled = v * CONFIG.factor + CONFIG.offset;
