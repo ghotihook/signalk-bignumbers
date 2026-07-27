@@ -36,8 +36,41 @@
     color: var(--fg);
     -webkit-font-smoothing: antialiased;
   }
+  /* Taken out of body's flow rather than laid out inside it, so splitting
+     the screen into bands leaves the centred message pane alone. */
+  #cells {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Labels are sized against the band they sit in: with two or three
+     stacked, each band is shorter and a full-height label would crowd its
+     number. One variable, so the title and unit shrink together. */
+  #cells.n2 { --label-size: clamp(1.3rem, 3.4vw, 2.6rem); }
+  #cells.n3 { --label-size: clamp(1.1rem, 2.6vw, 2rem); }
+  .cell {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cell + .cell::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 5%;
+    right: 5%;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.15;
+  }
   .title {
-    position: fixed;
+    /* Absolute, not fixed: it belongs to its band. With a single value the
+       band is the whole viewport, so it lands exactly where it always has. */
+    position: absolute;
     top: 1.2rem;
     left: 1.2rem;
     font-size: var(--label-size);
@@ -118,29 +151,28 @@
   #statusDot.live {
     background: #0a0;
   }
-  /* .value-row sets display:flex, so plain [hidden] wouldn't win */
+  /* #cells and .value-row set display:flex, so plain [hidden] wouldn't win */
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
   <div id="statusDot"></div>
-  <div class="title" id="title"></div>
-  <div class="value-row" id="valueRow">
-    <span class="sign" id="sign"></span><span class="value" id="value"></span>
-    <span class="unit" id="unit"></span>
-  </div>
+  <div id="cells" hidden></div>
   <!-- Error / "not configured yet" content lives here rather than being
-       written into the value row, so the sign/value/unit elements are
-       never destroyed and their references stay valid for the life of
-       the page. -->
+       written into a cell, so the sign/value/unit elements are never
+       destroyed and their references stay valid for the life of the page. -->
   <div id="message" hidden></div>
 
 <script>
   // --- Instrument configuration ---
-  // Either read entirely from the URL query string:
+  // A display shows one, two or three values, stacked in equal bands.
+  // Config is either read entirely from the URL query string:
   //   ?path=environment.wind.speedApparent&name=AWS&layout=xx.xx&unit=kt&factor=1.9438444924406
   //   ?path=navigation.attitude&field=roll&name=Heel&layout=xx&neg=true&unit=%C2%B0&factor=57.29577951308232
   //   ?path=environment.water.temperature&name=SEA&layout=xx.x&unit=%C2%B0C&factor=1&offset=-273.15
+  // ...with a second and third value's keys suffixed 2 and 3, so every
+  // single-value URL that ever worked still means the same thing:
+  //   ?path=navigation.speedOverGround&name=SOG&layout=xx.x&unit=kt&path2=environment.depth.belowTransducer&name2=DPT&layout2=xx.x&unit2=m
   // ...or, for a "dumb" display that never needs its own config touched,
   // just an identifier -- usually the Pi's hostname, via systemd's %H --
   // and the real config is fetched from SignalK itself:
@@ -148,60 +180,80 @@
   const params = new URLSearchParams(window.location.search);
   const displayId = params.get("display");
 
-  function parseLayout(layout) {
-    const [intPart, decPart] = layout.split(".");
-    return { intDigits: intPart.length, decimals: decPart ? decPart.length : 0 };
+  const MAX_ITEMS = 3;
+  // The per-value keys, as they appear both in a stored config and (with
+  // the 2/3 suffix for the second and third value) in the query string.
+  const ITEM_KEYS = ["path", "field", "name", "factor", "offset", "unit", "layout", "neg"];
+
+  function num(v, fallback) {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : fallback;
   }
 
-  // Builds CONFIG from anything with URLSearchParams' get()/has() shape --
-  // used directly for the query-string case, and via a tiny adapter (see
-  // fetchDisplayConfig) for config fetched from SignalK's applicationData.
-  function buildConfig(p) {
+  // Normalises one raw value config into the shape the rest of the page
+  // uses. Raw values arrive either as query-string strings or as whatever
+  // JSON types the store holds, so everything here is coerced, not trusted.
+  function makeItem(raw) {
+    const [intPart, decPart] = String(raw.layout || "x").split(".");
     return {
-      // Defaults to the host that served this page -- once installed as a
-      // SignalK webapp that's always the right SignalK server. Override
-      // with ?host= to point at a different server (e.g. a test instance).
-      host: p.get("host") || window.location.host,
-      path: p.get("path"),                          // SignalK path to subscribe to
-      field: p.get("field") || null,                 // key to pull out of a compound object value
-      name: p.get("name"),                           // short label + browser tab title
-      factor: p.has("factor") ? parseFloat(p.get("factor")) : 1, // unit conversion multiplier
-      offset: p.has("offset") ? parseFloat(p.get("offset")) : 0, // unit conversion offset (e.g. Kelvin -> Celsius)
-      unit: p.get("unit") || "",                     // unit label after the number
-      expectNegative: p.get("neg") === "true",       // reserve a sign column?
-      bg: p.get("bg") || null,                       // theme background, e.g. #000000
-      fg: p.get("fg") || null,                       // theme foreground, e.g. #ffffff
-      staleMs: 3000,                // grey out (and reset to placeholder) if no update within this window
-      reconnectMs: 1000,            // delay before retrying a dropped connection
-      ...parseLayout(p.get("layout") || "x"),
+      path: raw.path || null,       // SignalK path to subscribe to
+      field: raw.field || null,     // key to pull out of a compound object value
+      name: raw.name || null,       // short label above the number
+      factor: num(raw.factor, 1),   // unit conversion multiplier
+      offset: num(raw.offset, 0),   // unit conversion offset (e.g. Kelvin -> Celsius)
+      unit: raw.unit || "",         // unit label after the number
+      expectNegative: raw.neg === true || raw.neg === "true", // reserve a sign column?
+      intDigits: intPart.length,    // "xx.x" -> 2 integer digits, 1 decimal
+      decimals: decPart ? decPart.length : 0,
     };
   }
 
-  let CONFIG = buildConfig(params);
+  // Values are read positionally: the suffix-free keys are the first, then
+  // 2 and 3. A missing path ends the list, so there are never gaps.
+  function itemsFromParams(p) {
+    const items = [];
+    for (let i = 0; i < MAX_ITEMS; i++) {
+      const suffix = i === 0 ? "" : String(i + 1);
+      if (!p.get("path" + suffix)) break;
+      const raw = {};
+      for (const key of ITEM_KEYS) raw[key] = p.get(key + suffix);
+      items.push(raw);
+    }
+    return items;
+  }
 
-  const titleEl = document.getElementById("title");
-  const valueRowEl = document.getElementById("valueRow");
-  const signEl = document.getElementById("sign");
-  const valueEl = document.getElementById("value");
-  const unitEl = document.getElementById("unit");
+  let CONFIG = {
+    // Defaults to the host that served this page -- once installed as a
+    // SignalK webapp that's always the right SignalK server. Override
+    // with ?host= to point at a different server (e.g. a test instance).
+    host: params.get("host") || window.location.host,
+    bg: params.get("bg") || null, // theme background, e.g. #000000
+    fg: params.get("fg") || null, // theme foreground, e.g. #ffffff
+    staleMs: 3000,                // grey out (and reset to placeholder) if no update within this window
+    reconnectMs: 1000,            // delay before retrying a dropped connection
+    items: itemsFromParams(params).map(makeItem),
+  };
+
+  const cellsEl = document.getElementById("cells");
   const dotEl = document.getElementById("statusDot");
   const messageEl = document.getElementById("message");
-  let staleTimer = null;
 
-  // Swaps between the live value row and the message pane. Neither is
-  // ever rebuilt, so a display can move between "not configured", an
-  // error and running any number of times without invalidating the
-  // element references captured above.
+  // One entry per displayed value, built once by buildCells(). Each holds
+  // its own element references and its own stale timer.
+  let cells = [];
+
+  // Swaps between the live cells and the message pane. Neither is ever
+  // rebuilt, so a display can move between "not configured", an error and
+  // running any number of times without invalidating element references.
   function showMessage(node) {
     messageEl.textContent = "";
     messageEl.appendChild(node);
     messageEl.hidden = false;
-    valueRowEl.hidden = true;
+    cellsEl.hidden = true;
   }
 
   function showError(message) {
     document.title = "SignalK Instrument — error";
-    titleEl.textContent = "ERROR";
     const box = document.createElement("div");
     box.className = "error";
     box.textContent = message;
@@ -214,7 +266,6 @@
   // in the webapp, no SSH access needed.
   function showUnconfigured() {
     document.title = `Unconfigured — ${displayId}`;
-    titleEl.textContent = "";
     const box = document.createElement("div");
     box.className = "unconfigured";
     const id = document.createElement("div");
@@ -227,18 +278,55 @@
     showMessage(box);
   }
 
+  // Runs exactly once, from start(). Nothing here is ever rebuilt
+  // afterwards -- only the text inside .sign and .value changes. Recreating
+  // a cell would detach the references captured below, and every later
+  // update would silently write to orphaned nodes.
+  function buildCells() {
+    cellsEl.className = `n${CONFIG.items.length}`;
+    cells = CONFIG.items.map((cfg) => {
+      const el = document.createElement("div");
+      el.className = "cell";
+      const titleEl = document.createElement("div");
+      titleEl.className = "title";
+      titleEl.textContent = cfg.name;
+      const rowEl = document.createElement("div");
+      rowEl.className = "value-row";
+      const signEl = document.createElement("span");
+      signEl.className = "sign";
+      const valueEl = document.createElement("span");
+      valueEl.className = "value";
+      const unitEl = document.createElement("span");
+      unitEl.className = "unit";
+      unitEl.textContent = cfg.unit;
+      // Appended as elements, never via innerHTML: .value is white-space:pre,
+      // so whitespace between the tags would render as a real space.
+      rowEl.append(signEl, valueEl, unitEl);
+      el.append(titleEl, rowEl);
+      cellsEl.appendChild(el);
+      return {
+        cfg, el, rowEl, signEl, valueEl,
+        staleTimer: null,
+        placeholderSign: cfg.expectNegative ? " " : "",
+        placeholderValue: "-".repeat(cfg.intDigits) +
+          (cfg.decimals > 0 ? "." + "-".repeat(cfg.decimals) : ""),
+      };
+    });
+  }
+
+  // Like run(), at most once per page load -- it builds the cells. Config
+  // changes are handled by reloading the page, not by calling this again.
   function start() {
-    if (!CONFIG.path || !CONFIG.name) {
+    if (!CONFIG.items.length || CONFIG.items.some((item) => !item.path || !item.name)) {
       showError("Missing required ?path= and/or ?name= parameter");
       return;
     }
-    document.title = CONFIG.name;
-    titleEl.textContent = CONFIG.name;
-    unitEl.textContent = CONFIG.unit;
+    document.title = CONFIG.items.map((item) => item.name).join(" · ");
     if (CONFIG.bg) document.documentElement.style.setProperty("--bg", CONFIG.bg);
     if (CONFIG.fg) document.documentElement.style.setProperty("--fg", CONFIG.fg);
+    buildCells();
     messageEl.hidden = true;
-    valueRowEl.hidden = false;
+    cellsEl.hidden = false;
     run();
   }
 
@@ -271,12 +359,14 @@
         // host isn't part of a stored config -- keep the one we're already
         // talking to, or a ?host= override would be silently dropped here
         // and the websocket would connect somewhere else.
-        const getter = {
-          get: (k) => (k === "host" ? CONFIG.host
-            : raw[k] === undefined || raw[k] === null ? null : String(raw[k])),
-          has: (k) => raw[k] !== undefined && raw[k] !== null,
+        // A config saved before multi-value support is a bare single value
+        // with no items array; read it as a one-value config.
+        CONFIG = {
+          ...CONFIG,
+          bg: raw.bg || null,
+          fg: raw.fg || null,
+          items: (Array.isArray(raw.items) ? raw.items : [raw]).slice(0, MAX_ITEMS).map(makeItem),
         };
-        CONFIG = buildConfig(getter);
         start();
         watchForConfigChanges(JSON.stringify(raw));
       }, () => {
@@ -313,52 +403,63 @@
   // Measure with real digit glyphs, not the placeholder's dashes -- a
   // proportional font's "-" isn't guaranteed the same width as its digits,
   // so fitting against dashes could leave live numbers over- or under-sized.
+  // Every cell ends up at the same size, set by whichever one fits tightest
+  // in its own band, so a screen of numbers reads as one instrument rather
+  // than as several unrelated ones.
   function fitDisplay() {
-    const sampleIntPart = "8".repeat(CONFIG.intDigits);
-    const sampleDecPart = CONFIG.decimals > 0 ? "8".repeat(CONFIG.decimals) : undefined;
-    const prevValueHtml = valueEl.innerHTML;
-    const prevSignText = signEl.textContent;
-    valueEl.textContent = sampleDecPart !== undefined ? `${sampleIntPart}.${sampleDecPart}` : sampleIntPart;
-    signEl.textContent = CONFIG.expectNegative ? "-" : "";
+    const saved = cells.map((c) => ({ html: c.valueEl.innerHTML, sign: c.signEl.textContent }));
+    for (const c of cells) {
+      const intSample = "8".repeat(c.cfg.intDigits);
+      c.valueEl.textContent = c.cfg.decimals > 0
+        ? `${intSample}.${"8".repeat(c.cfg.decimals)}`
+        : intSample;
+      c.signEl.textContent = c.cfg.expectNegative ? "-" : "";
+      c.rowEl.style.fontSize = "10rem";
+    }
 
     // A single measure-and-scale jump from a small baseline to a much larger
     // target isn't perfectly accurate (subpixel rounding/hinting mean font
     // metrics don't scale perfectly linearly across a big range), so refine
     // over a few passes -- each one is a much smaller correction than the
     // last and converges on the true fit.
-    const availW = window.innerWidth * 0.92;
-    const availH = window.innerHeight * 0.85;
-    valueRowEl.style.fontSize = "10rem";
     for (let i = 0; i < 4; i++) {
-      const rect = valueRowEl.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) break;
-      const baseSizePx = parseFloat(getComputedStyle(valueRowEl).fontSize);
-      const scale = Math.min(availW / rect.width, availH / rect.height);
-      valueRowEl.style.fontSize = `${baseSizePx * scale}px`;
+      let scale = Infinity;
+      for (const c of cells) {
+        const rect = c.rowEl.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) { scale = Infinity; break; }
+        scale = Math.min(scale,
+          (c.el.clientWidth * 0.92) / rect.width,
+          (c.el.clientHeight * 0.85) / rect.height);
+      }
+      if (!Number.isFinite(scale)) break;
+      // Every row is at the same size, so one read gives the base for all.
+      const baseSizePx = parseFloat(getComputedStyle(cells[0].rowEl).fontSize);
+      for (const c of cells) c.rowEl.style.fontSize = `${baseSizePx * scale}px`;
     }
 
-    valueEl.innerHTML = prevValueHtml;
-    signEl.textContent = prevSignText;
+    cells.forEach((c, i) => {
+      c.valueEl.innerHTML = saved[i].html;
+      c.signEl.textContent = saved[i].sign;
+    });
   }
 
   function run() {
-    const PLACEHOLDER_SIGN = CONFIG.expectNegative ? " " : "";
-    const PLACEHOLDER_VALUE = "-".repeat(CONFIG.intDigits) +
-      (CONFIG.decimals > 0 ? "." + "-".repeat(CONFIG.decimals) : "");
-    signEl.textContent = PLACEHOLDER_SIGN;
-    valueEl.textContent = PLACEHOLDER_VALUE;
+    for (const c of cells) {
+      c.signEl.textContent = c.placeholderSign;
+      c.valueEl.textContent = c.placeholderValue;
+    }
 
     fitDisplay();
     document.fonts.ready.then(fitDisplay);
     window.addEventListener("resize", () => requestAnimationFrame(fitDisplay));
 
-    function formatValue(v) {
-      const scaled = v * CONFIG.factor + CONFIG.offset;
-      const absStr = Math.abs(scaled).toFixed(CONFIG.decimals);
+    function formatValue(cfg, v) {
+      const scaled = v * cfg.factor + cfg.offset;
+      const absStr = Math.abs(scaled).toFixed(cfg.decimals);
       const [intPart, decPart] = absStr.split(".");
       const roundsToZero = parseFloat(absStr) === 0;
-      const sign = !CONFIG.expectNegative ? "" : (roundsToZero || scaled >= 0 ? " " : "-");
-      return { sign, intPart: intPart.padStart(CONFIG.intDigits, "0"), decPart };
+      const sign = !cfg.expectNegative ? "" : (roundsToZero || scaled >= 0 ? " " : "-");
+      return { sign, intPart: intPart.padStart(cfg.intDigits, "0"), decPart };
     }
 
     // Leading zeros in the integer part stay in the DOM (so they still occupy
@@ -374,21 +475,30 @@
       return decPart !== undefined ? `${intHtml}.${decPart}` : intHtml;
     }
 
-    function markStale() {
-      signEl.textContent = PLACEHOLDER_SIGN;
-      valueEl.textContent = PLACEHOLDER_VALUE;
-      signEl.classList.add("stale");
-      valueEl.classList.add("stale");
+    function markStale(c) {
+      c.signEl.textContent = c.placeholderSign;
+      c.valueEl.textContent = c.placeholderValue;
+      c.signEl.classList.add("stale");
+      c.valueEl.classList.add("stale");
     }
 
-    function updateValue(v) {
-      const { sign, intPart, decPart } = formatValue(v);
-      signEl.textContent = sign;
-      valueEl.innerHTML = digitsHtml(intPart, decPart);
-      signEl.classList.remove("stale");
-      valueEl.classList.remove("stale");
-      clearTimeout(staleTimer);
-      staleTimer = setTimeout(markStale, CONFIG.staleMs);
+    function updateValue(c, v) {
+      const { sign, intPart, decPart } = formatValue(c.cfg, v);
+      c.signEl.textContent = sign;
+      c.valueEl.innerHTML = digitsHtml(intPart, decPart);
+      c.signEl.classList.remove("stale");
+      c.valueEl.classList.remove("stale");
+      clearTimeout(c.staleTimer);
+      c.staleTimer = setTimeout(() => markStale(c), CONFIG.staleMs);
+    }
+
+    // Two values can share a path -- heel and trim are both fields of
+    // navigation.attitude -- so subscribe once per distinct path and fan
+    // each delta out to every cell watching it.
+    const byPath = new Map();
+    for (const c of cells) {
+      if (!byPath.has(c.cfg.path)) byPath.set(c.cfg.path, []);
+      byPath.get(c.cfg.path).push(c);
     }
 
     function connect() {
@@ -402,7 +512,7 @@
         dotEl.classList.add("live");
         ws.send(JSON.stringify({
           context: "vessels.self",
-          subscribe: [{ path: CONFIG.path, policy: "instant" }],
+          subscribe: [...byPath.keys()].map((path) => ({ path, policy: "instant" })),
         }));
       };
 
@@ -412,18 +522,19 @@
         for (const update of data.updates) {
           if (!update.values) continue;
           for (const v of update.values) {
-            if (v.path !== CONFIG.path) continue;
-            // v.value can be null when a source drops out, so don't index
-            // into it blindly -- that would throw and kill this handler.
-            const raw = CONFIG.field ? v.value && v.value[CONFIG.field] : v.value;
-            if (typeof raw === "number") updateValue(raw);
+            for (const c of byPath.get(v.path) || []) {
+              // v.value can be null when a source drops out, so don't index
+              // into it blindly -- that would throw and kill this handler.
+              const raw = c.cfg.field ? v.value && v.value[c.cfg.field] : v.value;
+              if (typeof raw === "number") updateValue(c, raw);
+            }
           }
         }
       };
 
       ws.onclose = () => {
         dotEl.classList.remove("live");
-        markStale();
+        for (const c of cells) markStale(c);
         setTimeout(connect, CONFIG.reconnectMs);
       };
 

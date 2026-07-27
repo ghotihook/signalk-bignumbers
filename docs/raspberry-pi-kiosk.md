@@ -128,6 +128,12 @@ In the webapp's list, **Edit** and **Delete** manage existing entries. A
 display's hostname is fixed once created — to point a different Pi at an
 instrument, delete the entry and add that Pi's hostname instead.
 
+**+ Add another number** puts a second or third value on the same screen.
+They split it into equal horizontal bands, top to bottom in the order
+listed, and all render at the same digit size. The kiosk URL doesn't
+change — the Pi still just asks for `?display=<hostname>` — so going from
+one number to three is a save in the webapp, nothing on the Pi.
+
 **Colours** offers a few fixed high-contrast pairs, set per display. Red
 or amber on black preserve night vision at the helm; black on white or
 black on amber read better in direct sun. Each display can differ, so a
@@ -201,7 +207,9 @@ be doubled**. A URL-encoded `%3A` breaks unit parsing outright (`Failed
 to resolve unit specifiers`, and the unit won't load at all) unless
 written `%%3A`. The doubling applies only inside the unit file — not when
 running cog from a shell, which is why step 2's command needs no
-escaping.
+escaping. This bites harder on a multi-value URL, which repeats every
+per-value parameter two or three times: one missed `%` in any of them and
+the unit silently won't load. `?display=` avoids the whole problem.
 
 Related: **non-ASCII characters can be mangled** if typed on an SSH
 session that isn't in a UTF-8 locale, and cog then rejects the URL as
