@@ -95,6 +95,27 @@ and keep up on 512MB.
 If the Pi can't keep up, the fix is fewer values on screen or a slower
 source — never a buffer.
 
+## CPU, and fast sources
+
+Every delta is rendered and there is no rate limit, so a 10 Hz source
+updates the screen ten times a second. That stays cheap:
+
+- A display only ever receives the one to three paths it shows. The
+  socket opens `?subscribe=none` and subscribes by path, so the rest of
+  the bus — however busy — is never sent and never parsed.
+- Nothing animates, so between deltas the page paints nothing at all.
+  CPU follows the data rate rather than the clock.
+- An update writes the sign and the digits, and nothing else. Digit
+  widths are reserved, so a changing value doesn't reflow the page or
+  resize the text — `fitDisplay()` runs at startup and on resize, not per
+  value.
+- Past the screen's refresh rate the browser coalesces those writes into
+  one paint, so a source faster than the panel costs parsing rather than
+  drawing.
+
+There's no framework, no bundler and no dependencies to load first, which
+is what makes a Pi Zero 2 W a reasonable thing to put on a mast.
+
 ## What's here
 
 - **`public/index.html`** — the webapp. Lists every configured display,
