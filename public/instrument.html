@@ -104,6 +104,8 @@
   #statusDot.live {
     background: #0a0;
   }
+  /* .value-row sets display:flex, so plain [hidden] wouldn't win */
+  [hidden] { display: none !important; }
 </style>
 </head>
 <body>
@@ -113,6 +115,11 @@
     <span class="sign" id="sign"></span><span class="value" id="value"></span>
     <span class="unit" id="unit"></span>
   </div>
+  <!-- Error / "not configured yet" content lives here rather than being
+       written into the value row, so the sign/value/unit elements are
+       never destroyed and their references stay valid for the life of
+       the page. -->
+  <div id="message" hidden></div>
 
 <script>
   // --- Instrument configuration ---
@@ -161,12 +168,27 @@
   const valueEl = document.getElementById("value");
   const unitEl = document.getElementById("unit");
   const dotEl = document.getElementById("statusDot");
+  const messageEl = document.getElementById("message");
   let staleTimer = null;
+
+  // Swaps between the live value row and the message pane. Neither is
+  // ever rebuilt, so a display can move between "not configured", an
+  // error and running any number of times without invalidating the
+  // element references captured above.
+  function showMessage(node) {
+    messageEl.textContent = "";
+    messageEl.appendChild(node);
+    messageEl.hidden = false;
+    valueRowEl.hidden = true;
+  }
 
   function showError(message) {
     document.title = "SignalK Instrument — error";
     titleEl.textContent = "ERROR";
-    valueRowEl.innerHTML = `<span class="error">${message}</span>`;
+    const box = document.createElement("div");
+    box.className = "error";
+    box.textContent = message;
+    showMessage(box);
   }
 
   // Shown when a display id has no saved config yet -- the normal state
@@ -176,11 +198,16 @@
   function showUnconfigured() {
     document.title = `Unconfigured — ${displayId}`;
     titleEl.textContent = "";
-    valueRowEl.innerHTML = `
-      <div class="unconfigured">
-        <div class="id">${displayId}</div>
-        <div class="hint">Not configured yet — enter this Display ID in the SignalK instrument picker</div>
-      </div>`;
+    const box = document.createElement("div");
+    box.className = "unconfigured";
+    const id = document.createElement("div");
+    id.className = "id";
+    id.textContent = displayId;
+    const hint = document.createElement("div");
+    hint.className = "hint";
+    hint.textContent = "Not configured yet — add this code in the SignalK displays webapp";
+    box.append(id, hint);
+    showMessage(box);
   }
 
   function start() {
@@ -191,6 +218,8 @@
     document.title = CONFIG.name;
     titleEl.textContent = CONFIG.name;
     unitEl.textContent = CONFIG.unit;
+    messageEl.hidden = true;
+    valueRowEl.hidden = false;
     run();
   }
 
