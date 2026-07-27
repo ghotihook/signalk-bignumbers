@@ -6,9 +6,17 @@
     "signalk-webapp",
     "signalk"
   ],
+  "author": "ghotihook (https://github.com/ghotihook)",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/ghotihook/signalk-bignumbers.git"
+  },
+  "files": [
+    "public/",
+    "docs/"
+  ],
+  "signalk": {
+    "appIcon": "./icon.png"
   }
 }

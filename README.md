@@ -89,15 +89,23 @@ thing that will quietly take a repeater off the air mid-leg.
 
 ## Install
 
-It's a SignalK webapp — a package of static files, no plugin or backend.
-Install it into your SignalK server's `node_modules` and restart the
-server, and it appears in the Webapps menu:
+It's a SignalK webapp — static files, no plugin and no backend, so there
+is nothing to configure on the server side.
+
+The easy way is SignalK's own **Appstore**: in the server's admin UI, find
+`signalk-bignumbers` under *Appstore → Available*, install it, and restart
+the server. It then appears in the Webapps menu.
+
+By hand, if you prefer:
 
 ```bash
 cd ~/.signalk
-npm install ghotihook/signalk-bignumbers
+npm install signalk-bignumbers
 sudo systemctl restart signalk    # or however your server is run
 ```
+
+To follow the development version instead of a release, install straight
+from the repo: `npm install ghotihook/signalk-bignumbers`.
 
 ## How a display gets configured
 
