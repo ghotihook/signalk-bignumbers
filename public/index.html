@@ -235,7 +235,7 @@
 </head>
 <body>
 <main>
-  <h1>SignalK Displays <span class="version">v0.0.4</span></h1>
+  <h1>SignalK Displays <span class="version">v0.0.5</span></h1>
 
   <div class="authbar">
     <span id="authState">Not logged in</span>
@@ -403,10 +403,16 @@
   const TOKEN_KEY = "sk_token";
 
   // The picker is served by SignalK itself, so the serving host is always
-  // the right server. ?host= overrides it for local testing against a
-  // different instance.
-  const HOST = new URLSearchParams(window.location.search).get("host") || window.location.host;
-  const ORIGIN = `${window.location.protocol}//${HOST}`;
+  // the right server, and it is the ONLY server this page will talk to.
+  //
+  // There is deliberately no ?host= override here, and adding one back
+  // would be a vulnerability, not a convenience: this page posts a
+  // username and password, so a query parameter that moves the origin
+  // turns any link to it into a credential harvester -- the address bar
+  // still shows the real SignalK server while the login goes elsewhere.
+  // instrument.html can afford a ?host= because it holds no credentials.
+  const HOST = window.location.host;
+  const ORIGIN = window.location.origin;
   const DATA_URL = `${ORIGIN}/signalk/v1/applicationData/global/signalk-bignumbers/1`;
 
   // Directory this page lives in, so generated links work whether opened

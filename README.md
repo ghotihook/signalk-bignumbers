@@ -98,7 +98,7 @@ instrument.html?path=environment.wind.speedApparent&name=AWS&layout=xx.xx&unit=k
 | `neg` | `true` to reserve room for a minus sign |
 | `unit` | Label shown after the number |
 | `factor`, `offset` | Unit conversion: `shown = raw * factor + offset` |
-| `bg`, `fg` | Theme colours for this value's band; unsuffixed they also set the screen's |
+| `bg`, `fg` | Theme colours for this value's band; unsuffixed they also set the screen's. Hex only (`#000000`, `#fff`) — anything else is ignored |
 | `host` | SignalK server, if not the one serving the page (whole screen) |
 | `display` | Stored-config identifier — used *instead of* all of the above |
 

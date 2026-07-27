@@ -168,6 +168,37 @@ to reintroduce from a distance:
    so a throw inside the success handler can't be retried into a second
    `run()`.
 
+## Security invariants
+
+Both of these were live vulnerabilities, found in review and fixed in
+0.0.5. Both are easy to undo, because both look like conveniences.
+
+1. **`index.html` talks only to the origin that served it.** No `?host=`
+   override, ever. That page posts a username and password, so a
+   parameter that moves the origin turns any link to it into a credential
+   harvester: the address bar still shows the real SignalK server while
+   the login POST goes wherever the link says. `instrument.html` keeps
+   its `?host=` because it holds no credentials — its worst case is
+   showing someone else's numbers.
+2. **Colours are validated to literal hex before reaching CSS.** `bg`/`fg`
+   land in custom properties feeding `background: var(--bg)`, and the
+   `background` shorthand accepts an image — so an unvalidated
+   `url(https://elsewhere/x.png)` is a *valid* background, and makes every
+   display fetch it, announcing the boat to whoever wrote the config.
+   `colour()` is the only way a colour should reach `style.setProperty`.
+
+The rule behind both: **a stored config is attacker-controlled input.**
+It lives in `applicationData/global/`, which any authenticated SignalK
+user can write. `name` and `unit` are safe only because they go through
+`textContent` — keep it that way, and never build a cell with
+`innerHTML`.
+
+Known and accepted, so they don't get re-litigated: the SignalK token
+sits in `localStorage` (SignalK serves every webapp from one origin, so a
+compromised sibling webapp could read it), and credentials cross a boat
+LAN in the clear when SignalK is served over http. Neither is fixable
+from inside this webapp.
+
 ## .gitignore
 
 `.gitignore` covers `node_modules/`, Python `__pycache__/`/`*.pyc` (from
@@ -177,7 +208,7 @@ tooling to generate a lockfile-driven ignore list from.
 
 ## Versioning
 
-`package.json` `version` and the `v0.0.4` label in `public/index.html`
+`package.json` `version` and the `v0.0.5` label in `public/index.html`
 are both hand-maintained — there's no build step to derive one from the
 other, so bump both together, and tag the release commit (`git tag -a
 X.Y.Z`).

@@ -202,6 +202,16 @@
     return Number.isFinite(n) ? n : fallback;
   }
 
+  // Colours end up in custom properties that feed `background: var(--bg)`,
+  // and the background shorthand accepts an image -- so an unvalidated
+  // value like "url(https://elsewhere/x.png)" is a valid background and
+  // would make every display fetch it, announcing the boat to whoever
+  // wrote the config. Configs come from a store any SignalK user can
+  // write, so nothing but a literal hex colour is allowed through.
+  function colour(v) {
+    return typeof v === "string" && /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(v) ? v : null;
+  }
+
   // Normalises one raw value config into the shape the rest of the page
   // uses. Raw values arrive either as query-string strings or as whatever
   // JSON types the store holds, so everything here is coerced, not trusted.
@@ -215,8 +225,8 @@
       offset: num(raw.offset, 0),   // unit conversion offset (e.g. Kelvin -> Celsius)
       unit: raw.unit || "",         // unit label after the number
       expectNegative: raw.neg === true || raw.neg === "true", // reserve a sign column?
-      bg: raw.bg || null,           // this band's background, else the display's
-      fg: raw.fg || null,           // this band's foreground, else the display's
+      bg: colour(raw.bg),           // this band's background, else the display's
+      fg: colour(raw.fg),           // this band's foreground, else the display's
       intDigits: intPart.length,    // "xx.x" -> 2 integer digits, 1 decimal
       decimals: decPart ? decPart.length : 0,
     };
@@ -241,8 +251,8 @@
     // SignalK webapp that's always the right SignalK server. Override
     // with ?host= to point at a different server (e.g. a test instance).
     host: params.get("host") || window.location.host,
-    bg: params.get("bg") || null, // theme background, e.g. #000000
-    fg: params.get("fg") || null, // theme foreground, e.g. #ffffff
+    bg: colour(params.get("bg")), // theme background, e.g. #000000
+    fg: colour(params.get("fg")), // theme foreground, e.g. #ffffff
     staleMs: 3000,                // grey out (and reset to placeholder) if no update within this window
     reconnectMs: 1000,            // delay before retrying a dropped connection
     items: itemsFromParams(params).map(makeItem),
@@ -388,8 +398,8 @@
         // with no items array; read it as a one-value config.
         CONFIG = {
           ...CONFIG,
-          bg: raw.bg || null,
-          fg: raw.fg || null,
+          bg: colour(raw.bg),
+          fg: colour(raw.fg),
           items: (Array.isArray(raw.items) ? raw.items : [raw]).slice(0, MAX_ITEMS).map(makeItem),
         };
         start();
