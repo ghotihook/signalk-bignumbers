@@ -1,6 +1,6 @@
 {
   "name": "signalk-bignumbers",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Big, high-contrast single-value instrument displays for SignalK, managed centrally so each screen needs no local config.",
   "keywords": [
     "signalk-webapp",
