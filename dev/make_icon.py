@@ -28,11 +28,11 @@ SIZE = 512          # well above SignalK's 72px minimum, so it scales down clean
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 
-# One entry per band, top to bottom: label, value, and whether the band is
-# inverted.
+# One entry per band, top to bottom: label, value, and whether the band has
+# a light background.
 BANDS = [
-    ("STW", "8.4", False),
-    ("TWA", "143", True),
+    ("STW", "8.4", True),
+    ("TWA", "143", False),
 ]
 
 # Digits are sized against the space left under the label, not the whole
@@ -90,10 +90,10 @@ def main():
         key=lambda f: f.size,
     )
 
-    for i, (label, value, inverted) in enumerate(BANDS):
+    for i, (label, value, light) in enumerate(BANDS):
         top = round(i * band_h)
         bottom = round((i + 1) * band_h)
-        bg, fg = (WHITE, BLACK) if inverted else (BLACK, WHITE)
+        bg, fg = (WHITE, BLACK) if light else (BLACK, WHITE)
         draw.rectangle([0, top, SIZE, bottom - 1], fill=bg)
 
         pad = band_h * LABEL_PAD
