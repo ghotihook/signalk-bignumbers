@@ -13,7 +13,7 @@ up mid-manoeuvre.
 
 Values render the moment each SignalK delta arrives — nothing is
 buffered, batched, rate-limited or smoothed on the way to the screen.
-See [Latency](#latency).
+See [Latency and load](#latency-and-load).
 
 A display is anything with a browser — a Raspberry Pi with an HDMI panel,
 a phone, a tablet, a laptop. They all open the same page, and none of them
@@ -65,56 +65,39 @@ on its own after a power cut and doesn't mind the rain.
 Set a phone or tablet to never auto-lock. The page holds no wake-lock, so
 the screen timeout will take it off the air.
 
-## Latency
+## Latency and load
 
-**Late data is worse than no data.** A number two seconds old that looks
-current is worse than no number at all, because nothing on the screen
-tells you not to trust it. Someone is trimming to it.
+**Late data is worse than no data.** A number two seconds old looks
+current, and nothing on screen says otherwise. Someone is trimming to it.
 
-So there is as little as possible between the delta arriving and the
-glass lighting up:
+So as little as possible sits between the delta and the glass:
 
-- Subscriptions use `policy: "instant"`, with no `period` and no
-  `minPeriod`. Values arrive as they change, not on a timer.
-- Each delta renders synchronously as it arrives. No queue, no
+- Subscriptions use `policy: "instant"`, no `period`, no `minPeriod`.
+  Values arrive as they change, not on a timer.
+- Each delta renders synchronously on arrival. No queue, no
   `requestAnimationFrame`, no `setTimeout`, no batching.
-- Nothing animates. A tweened number both shows readings the boat never
-  took and shows them late, so value changes carry `transition: none`.
-- No smoothing, averaging or damping in the display. If a path needs
-  damping it belongs upstream in SignalK, where every display reading it
-  gets the same treatment.
-- The socket opens `?subscribe=none` and subscribes only to the paths on
-  screen — no firehose of unrelated JSON to parse through first.
+- Nothing animates. A tweened number shows readings the boat never took,
+  and shows them late; value changes carry `transition: none`.
+- No smoothing, averaging or damping. Damping belongs upstream in
+  SignalK, where every display gets it.
 - No history, replay or backfill. A reconnected display shows the next
   live value, not what it missed.
 
-The page is static HTML with no framework, no bundler and no
-dependencies, which is what lets a Pi Zero 2 W boot into a live number
-and keep up on 512MB.
+There's no rate limit either, so a 10 Hz source updates the screen ten
+times a second. That stays cheap:
 
-If the Pi can't keep up, the fix is fewer values on screen or a slower
-source — never a buffer.
+- A display receives only the paths it shows. The socket opens
+  `?subscribe=none` and subscribes by path, so the rest of the bus is
+  never sent, however busy.
+- Between deltas nothing paints. CPU follows the data rate, not the clock.
+- An update writes the sign and digits, nothing else. Digit widths are
+  reserved, so a new value doesn't reflow or resize the text;
+  `fitDisplay()` runs at startup and on resize, not per value.
+- Past the refresh rate the browser coalesces writes into one paint, so a
+  source faster than the panel costs parsing, not drawing.
 
-## CPU, and fast sources
-
-Every delta is rendered and there is no rate limit, so a 10 Hz source
-updates the screen ten times a second. That stays cheap:
-
-- A display only ever receives the one to three paths it shows. The
-  socket opens `?subscribe=none` and subscribes by path, so the rest of
-  the bus — however busy — is never sent and never parsed.
-- Nothing animates, so between deltas the page paints nothing at all.
-  CPU follows the data rate rather than the clock.
-- An update writes the sign and the digits, and nothing else. Digit
-  widths are reserved, so a changing value doesn't reflow the page or
-  resize the text — `fitDisplay()` runs at startup and on resize, not per
-  value.
-- Past the screen's refresh rate the browser coalesces those writes into
-  one paint, so a source faster than the panel costs parsing rather than
-  drawing.
-
-There's no framework, no bundler and no dependencies to load first, which
-is what makes a Pi Zero 2 W a reasonable thing to put on a mast.
+No framework, no bundler, no dependencies. If a Pi still can't keep up,
+cut values or slow the source — never buffer.
 
 ## What's here
 
