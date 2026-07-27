@@ -1,8 +1,13 @@
 # signalk-bignumbers
 
-Big, high-contrast instrument displays for
-[SignalK](https://signalk.org) — one, two or three values filling a
-screen, designed to be read at a glance from across a cockpit.
+Big, high-contrast number displays for [SignalK](https://signalk.org) —
+mast and repeater screens for racing, showing one, two or three values
+large enough to read from the rail.
+
+It is deliberately **not an MFD**: no charts, no gauges, no graphs or
+history, nothing to touch. Just the numbers, as large, as current and as
+legible as the screen allows, for someone who has half a second to look
+up mid-manoeuvre.
 
 Each display is a cheap Raspberry Pi with an HDMI screen, running nothing
 but a fullscreen browser. It knows only its own hostname; what it shows
@@ -51,6 +56,29 @@ the background changes, the change of colour is the divide.
 Configs live in signalk-server's built-in `applicationData` store, keyed
 by hostname. Displays read it anonymously; saving requires a SignalK
 login, which the webapp prompts for.
+
+## Reading the screen
+
+**Late data is worse than no data.** A number two seconds old that looks
+current is worse than no number at all, because nothing on the screen
+tells you not to trust it. Everything here follows from that.
+
+Values render the instant each SignalK delta arrives — no smoothing, no
+averaging, no rate limiting, no animation between readings, and nothing
+queued or batched on the way to the screen. What's on the mast is what
+the instrument is reading now.
+
+If a value goes 3 seconds without an update it drops to grey dashes
+rather than holding its last reading, so a dead sensor or a dropped feed
+looks obviously dead instead of looking like a becalmed boat. The dot in
+the top-right corner is green while the connection to SignalK is live and
+dark red when it isn't; a dropped connection retries every second and
+recovers on its own, showing the next live value rather than replaying
+what was missed.
+
+Digits never shift sideways as the value changes — the layout reserves
+width for every digit and for the minus sign, so the number stays still
+enough to read from a moving boat.
 
 ## Direct URLs
 

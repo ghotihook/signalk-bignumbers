@@ -3,6 +3,11 @@
 Boot a Raspberry Pi straight into a fullscreen signalk-bignumbers
 instrument, with no desktop environment.
 
+The target is a mast or repeater display for racing: a screen the crew
+read from several metres away, showing nothing but the numbers. Everything
+below is chosen for that — straight to the framebuffer, no compositor, no
+input devices, nothing between the SignalK delta and the glass.
+
 Written for a Pi Zero 2 W with an HDMI screen, running Raspberry Pi OS
 (Trixie) console-only. Everything below runs on the Pi over SSH.
 

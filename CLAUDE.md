@@ -1,5 +1,94 @@
 # signalk-bignumbers
 
+## What this is — and what it isn't
+
+Mast and repeater displays for **racing**. Someone on the rail looks up
+and reads a number off a screen several metres away, in spray, at an
+angle, in anything from full sun to full dark. That is the whole job.
+
+**This is not an MFD.** No charts, no gauges or dials, no graphs, trends
+or sparklines, no history, no AIS, no routing, no alarms, no touch
+targets, no pages to swipe between. A change that puts a pixel on screen
+which isn't a number, its label or its unit has to justify itself against
+reading distance first.
+
+Three things are optimised, in this order.
+
+### Latency — late data is worse than no data
+
+What's on the mast must be what the instrument is reading *now*; someone
+is trimming to it in real time. A number two seconds old that looks
+current is worse than dashes, because nothing on the screen tells the
+crew not to trust it. **Given the choice between showing an update late
+and not showing it at all, drop it.**
+
+Buffering between the delta arriving and the glass lighting up is kept at
+the bare minimum. All of the following are load-bearing:
+
+- Subscriptions use `policy: "instant"` with **no `period` and no
+  `minPeriod`**. Adding either is the obvious-looking way to "reduce load
+  on the Pi", and it buys latency directly. Don't.
+- Every delta renders synchronously inside `onmessage`. Never put a
+  queue, `requestAnimationFrame`, `setTimeout`, idle callback or batch
+  between arrival and paint.
+- `.sign`/`.value` carry `transition: none`. Never animate, tween or ease
+  a value change: an animating number both shows readings the boat never
+  took and shows them late.
+- No smoothing, averaging or damping in the client, ever — all three are
+  latency wearing a different hat. If a path genuinely needs damping it
+  belongs upstream in SignalK, where every display reading it gets the
+  same treatment.
+- The socket opens `?subscribe=none` and subscribes only to the paths on
+  screen. That's as much a latency decision as a bandwidth one: no
+  firehose of irrelevant JSON to parse through before reaching the value
+  that matters.
+- No history, replay or backfill on reconnect. A recovered connection
+  shows the next live value, never what was missed.
+- If the Pi can't keep up, cut values from the screen or slow the source.
+  Never buffer to cope.
+
+The stale timeout is the same principle from the other side: after
+`staleMs` (3s) with no update a band drops to grey dashes instead of
+holding its last reading, so a dead sensor or a dropped feed looks
+obviously dead rather than looking like a becalmed boat.
+
+One thing the code deliberately does *not* do: it never reads a delta's
+`timestamp`, and treats arrival order as truth. That is sound over a
+single websocket — TCP preserves order, so the newest delta is always the
+last one rendered. It would stop being sound the moment anything replayed
+buffered history into the stream, which is the case to watch for.
+
+### Clarity
+
+Read at distance, at speed, by someone with half a second to spare.
+
+- `fitDisplay()` makes the glyphs as large as the band allows.
+- **Digits must never move horizontally as the value changes** —
+  `tabular-nums`, leading zeros ghosted so they keep their width, and a
+  reserved sign column when `neg` is set. A number that jitters can't be
+  read from a moving boat.
+- All bands share one digit size, so a screen reads as one instrument.
+- Fixed high-contrast themes, not free colour pickers: nothing should be
+  selectable that washes out in sun or wrecks night vision.
+- `MAX_ITEMS` is 3 because past that the digits are too small to read
+  from the rail. Raising it trades away the only thing this does well.
+- `cursor: none`, `overflow: hidden` — there is nothing to interact with.
+
+### Speed
+
+A cheap Pi that has to boot into a live number and stay light.
+
+- No build step, no bundler, no framework, no runtime dependencies —
+  static files the SignalK server hands over as-is. Keep it that way.
+- Target hardware is a Pi Zero 2 W (512MB) running cog/WPE WebKit straight
+  to DRM. WebKit-only; no Chromium-specific APIs.
+- `font-display: block`, so nothing is measured or painted against a
+  fallback face.
+- One websocket per display however many values it shows, with paths
+  deduped before subscribing.
+
+## Layout of the repo
+
 Static SignalK webapp (no build step, no bundler) — `public/index.html` is
 the instrument picker, `public/instrument.html` is the display, both
 plain HTML/CSS/JS served as-is. `dev/dummy_signalk.py` is a standalone
