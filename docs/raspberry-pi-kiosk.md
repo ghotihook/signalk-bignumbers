@@ -125,17 +125,18 @@ built-in [applicationData](https://signalk.org) store, so changing a
 display never means SSHing into the Pi again, and there's no id to invent
 or keep in sync by hand.
 
-**A display with no saved config yet shows its own id, large, on screen**
-— that's the normal state right after first boot. Read the id off the
-physical screen (no SSH needed) and hand it to the picker page:
+**A display with no saved config yet shows its own code, large, on
+screen** — that's the normal state right after first boot. Read the code
+off the physical screen (no SSH needed) and register it:
 
-1. Open the picker page (`index.html`) from any browser on the network.
-2. Build the instrument as usual (preset, path, layout, etc.).
-3. Enter the **Display ID** shown on the kiosk's screen.
-4. Under "SignalK login," log in once — SignalK requires auth for writes
-   even when reads are open, so this step only applies to the picker, not
-   to any display. The token is kept in the browser's `localStorage`.
-5. Click **Save to SignalK**.
+1. Open the webapp (`index.html`) from any browser on the network. It
+   opens on a list of every display already configured.
+2. Log in using the bar at the top — SignalK requires auth for writes
+   even when reads are open, so this applies to this page only, never to
+   a display. The token is kept in the browser's `localStorage`.
+3. Click **+ Add display**, enter the code shown on the kiosk's screen,
+   pick the instrument, and **Save**. **Preview** opens the config in a
+   new tab first if you want to eyeball it before saving.
 
 An unconfigured display polls every few seconds waiting for its config to
 appear, so it starts showing the instrument on its own within a few
@@ -145,10 +146,10 @@ up the new value (only the initial "no config yet" state polls). A Pi's
 local config only needs to change at all if you're pointing it at a
 different SignalK server entirely.
 
-The picker also shows a **Configured displays** list at the top (an
-unauthenticated read, same as the display's own fetch) with every code
-already saved — Edit loads one back into the form to change it, Delete
-removes it. Both still require the same one-time login as Save.
+Back on the list, **Edit** and **Delete** manage existing entries. A
+display's code is fixed once created — to change it, delete the entry and
+add it again, which keeps an edit from silently creating a duplicate
+under a new code.
 
 ## Disable console blanking
 

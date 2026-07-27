@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SignalK Instrument Picker</title>
+<title>SignalK Displays</title>
 <style>
   html, body {
     margin: 0;
@@ -15,18 +15,24 @@
   body {
     display: flex;
     justify-content: center;
-    padding: 3rem 1rem;
+    padding: 2rem 1rem 4rem;
   }
-  form {
+  main {
     width: 100%;
     max-width: 480px;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
   }
   h1 {
     font-size: 1.3rem;
-    margin: 0 0 0.5rem;
+    margin: 0 0 1rem;
+  }
+  h2 {
+    font-size: 1.05rem;
+    margin: 0;
+  }
+  .version {
+    font-size: 0.75rem;
+    color: #666;
+    font-weight: normal;
   }
   label {
     display: flex;
@@ -43,33 +49,9 @@
     background: #1c1c1c;
     color: #eee;
   }
-  .advanced {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-  }
-  .advanced label {
-    grid-column: span 1;
-  }
-  details summary {
-    cursor: pointer;
-    color: #aaa;
-    font-size: 0.85rem;
-    margin-bottom: 0.5rem;
-  }
-  .url-box {
-    font-family: ui-monospace, "SF Mono", Menlo, monospace;
-    font-size: 0.85rem;
-    word-break: break-all;
-    background: #1c1c1c;
-    border: 1px solid #444;
-    border-radius: 6px;
-    padding: 0.75rem;
-    color: #9c9;
-  }
-  .buttons {
-    display: flex;
-    gap: 0.75rem;
+  input:disabled {
+    color: #888;
+    background: #161616;
   }
   button, .btn {
     font-size: 1rem;
@@ -79,151 +61,239 @@
     background: #2a6;
     color: #fff;
     cursor: pointer;
-    text-decoration: none;
     text-align: center;
     flex: 1;
   }
   button.secondary {
     background: #333;
   }
-  .version {
-    font-size: 0.75rem;
-    color: #666;
-    font-weight: normal;
+  button.danger {
+    background: #833;
+  }
+  button.small {
+    flex: none;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+  }
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .buttons {
+    display: flex;
+    gap: 0.75rem;
   }
   .status {
     font-size: 0.8rem;
     color: #aaa;
     min-height: 1em;
   }
-  .list-header {
+  .status.error { color: #e77; }
+  .status.ok { color: #7c7; }
+
+  /* --- login bar --- */
+  .authbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    background: #1a1a1a;
+    border: 1px solid #383838;
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.85rem;
+    color: #aaa;
+  }
+  .authbar input {
+    flex: 1;
+    min-width: 7rem;
+    font-size: 0.9rem;
+    padding: 0.4rem;
+  }
+
+  /* --- display list --- */
+  .list-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.85rem;
-    color: #aaa;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
   }
-  .list-header button {
-    flex: none;
-    padding: 0.3rem 0.6rem;
-    font-size: 0.8rem;
-  }
-  .display-list {
+  .rows {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
   }
-  .display-row {
+  .row {
     display: flex;
     align-items: center;
     gap: 0.6rem;
     background: #1c1c1c;
-    border: 1px solid #444;
+    border: 1px solid #3a3a3a;
     border-radius: 6px;
-    padding: 0.5rem 0.75rem;
+    padding: 0.6rem 0.75rem;
   }
-  .display-row .code {
+  .row .code {
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
-    color: #9c9;
+    font-size: 1.05rem;
     font-weight: bold;
+    color: #9c9;
+    letter-spacing: 0.05em;
   }
-  .display-row .info {
+  .row .meta {
     flex: 1;
-    font-size: 0.85rem;
-    color: #ccc;
+    min-width: 0;
+  }
+  .row .meta .name {
+    font-size: 0.95rem;
+  }
+  .row .meta .path {
+    font-size: 0.75rem;
+    color: #888;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .display-row button {
-    flex: none;
-    padding: 0.3rem 0.6rem;
+  .empty {
+    color: #777;
+    font-size: 0.9rem;
+    background: #1a1a1a;
+    border: 1px dashed #3a3a3a;
+    border-radius: 6px;
+    padding: 1.25rem;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  /* --- editor --- */
+  .editor-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+  .editor-head .sub {
     font-size: 0.8rem;
+    color: #777;
   }
-  .list-empty {
-    color: #666;
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+  details summary {
+    cursor: pointer;
+    color: #aaa;
     font-size: 0.85rem;
+    margin-bottom: 0.75rem;
   }
+  .hint {
+    font-size: 0.78rem;
+    color: #777;
+    line-height: 1.45;
+  }
+  .kiosk-url {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 0.8rem;
+    word-break: break-all;
+    background: #1c1c1c;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 0.6rem;
+    color: #9c9;
+  }
+  [hidden] { display: none !important; }
 </style>
 </head>
 <body>
-<form id="form" onsubmit="return false;">
-  <h1>SignalK Instrument Picker <span class="version">v0.0.1</span></h1>
+<main>
+  <h1>SignalK Displays <span class="version">v0.0.1</span></h1>
 
-  <div>
-    <div class="list-header">
-      <span>Configured displays</span>
-      <button type="button" class="secondary" id="refreshListBtn">Refresh</button>
-    </div>
-    <div id="displayList" class="display-list"><div class="list-empty">Loading...</div></div>
+  <div class="authbar">
+    <span id="authState">Not logged in</span>
+    <input id="username" placeholder="username" autocomplete="username" hidden>
+    <input id="password" type="password" placeholder="password" autocomplete="current-password" hidden>
+    <button type="button" class="secondary small" id="authBtn">Log in</button>
   </div>
+  <div class="status" id="authStatus"></div>
 
-  <label>
-    Host:Port
-    <input id="host">
-  </label>
-
-  <label>
-    Instrument
-    <select id="preset"></select>
-  </label>
-
-  <label>
-    Display name
-    <input id="name">
-  </label>
-
-  <details>
-    <summary>Advanced (path / conversion / format)</summary>
-    <div class="advanced">
-      <label>Path <input id="path"></label>
-      <label>Field <input id="field" placeholder="(none)"></label>
-      <label>Factor <input id="factor" type="number" step="any"></label>
-      <label>Offset <input id="offset" type="number" step="any"></label>
-      <label>Unit <input id="unit"></label>
-      <label>Layout <input id="layout" placeholder="xx.xx"></label>
-      <label>
-        Negative
-        <select id="neg">
-          <option value="false">No</option>
-          <option value="true">Yes</option>
-        </select>
-      </label>
+  <!-- ============ LIST VIEW ============ -->
+  <section id="listView" class="stack">
+    <div>
+      <div class="list-head">
+        <h2>Displays</h2>
+        <button type="button" class="small" id="addBtn">+ Add display</button>
+      </div>
+      <div class="rows" id="rows"></div>
     </div>
-  </details>
+    <div class="status" id="listStatus"></div>
+    <p class="hint">
+      A kiosk with no config yet shows its own 4-character code on screen.
+      Add that code here to tell it what to display.
+    </p>
+  </section>
 
-  <div class="url-box" id="urlBox"></div>
-
-  <div class="buttons">
-    <a class="btn" id="openBtn" target="_blank">Open</a>
-    <button type="button" class="secondary" id="copyBtn">Copy URL</button>
-  </div>
-
-  <label>
-    Display ID
-    <input id="displayId" placeholder="e.g. helm">
-  </label>
-
-  <div class="url-box" id="displayUrlBox"></div>
-
-  <details>
-    <summary>SignalK login (required to save)</summary>
-    <div class="advanced">
-      <label>Username <input id="username"></label>
-      <label>Password <input id="password" type="password"></label>
+  <!-- ============ EDITOR VIEW ============ -->
+  <section id="editorView" class="stack" hidden>
+    <div>
+      <div class="editor-head">
+        <h2 id="editorTitle">New display</h2>
+        <span class="sub" id="editorSub"></span>
+      </div>
     </div>
+
+    <label>
+      Display code
+      <input id="code" placeholder="e.g. f3a9" autocapitalize="off" autocomplete="off" spellcheck="false">
+    </label>
+    <div class="hint" id="codeHint">The code shown on the kiosk's screen.</div>
+
+    <label>
+      Instrument
+      <select id="preset"></select>
+    </label>
+
+    <label>
+      Display name
+      <input id="name" placeholder="shown at the top of the screen">
+    </label>
+
+    <details>
+      <summary>Advanced (path / conversion / format)</summary>
+      <div class="grid2">
+        <label>Path <input id="path"></label>
+        <label>Field <input id="field" placeholder="(none)"></label>
+        <label>Factor <input id="factor" type="number" step="any"></label>
+        <label>Offset <input id="offset" type="number" step="any"></label>
+        <label>Unit <input id="unit"></label>
+        <label>Layout <input id="layout" placeholder="xx.xx"></label>
+        <label>
+          Negative
+          <select id="neg">
+            <option value="false">No</option>
+            <option value="true">Yes</option>
+          </select>
+        </label>
+      </div>
+    </details>
+
     <div class="buttons">
-      <button type="button" class="secondary" id="loginBtn">Log in</button>
+      <button type="button" id="saveBtn">Save</button>
+      <button type="button" class="secondary" id="previewBtn">Preview</button>
+      <button type="button" class="secondary" id="cancelBtn">Cancel</button>
     </div>
-    <div class="status" id="loginStatus"></div>
-  </details>
+    <div class="status" id="editorStatus"></div>
 
-  <div class="buttons">
-    <button type="button" id="saveBtn">Save to SignalK</button>
-  </div>
-  <div class="status" id="saveStatus"></div>
-</form>
+    <div id="kioskUrlWrap" hidden>
+      <div class="hint" style="margin-bottom:0.4rem">Kiosk URL for this display (set once on the Pi):</div>
+      <div class="kiosk-url" id="kioskUrl"></div>
+      <div class="buttons" style="margin-top:0.5rem">
+        <button type="button" class="secondary small" id="copyUrlBtn">Copy</button>
+      </div>
+    </div>
+  </section>
+</main>
 
 <script>
   // Standard SignalK paths with recommended conversion + display format.
@@ -256,81 +326,221 @@
   ];
 
   const el = (id) => document.getElementById(id);
-  const presetSelect = el("preset");
-
-  PRESETS.forEach((p, i) => {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = p.field ? `${p.path} -> ${p.field}` : p.path;
-    presetSelect.appendChild(opt);
-  });
-
-  function applyPreset(p) {
-    el("name").value = p.name;
-    el("path").value = p.path;
-    el("field").value = p.field || "";
-    el("factor").value = p.factor;
-    el("offset").value = p.offset;
-    el("unit").value = p.unit;
-    el("layout").value = p.layout;
-    el("neg").value = String(p.neg);
-    updateUrl();
-  }
-
-  // Directory this page lives in, so the generated link works whether it's
-  // opened straight from disk or hosted by SignalK under /<webapp-name>/.
-  function instrumentBaseUrl() {
-    const dir = window.location.pathname.replace(/[^/]*$/, "");
-    return `${window.location.origin}${dir}instrument.html`;
-  }
-
-  function updateUrl() {
-    const params = new URLSearchParams();
-    params.set("host", el("host").value.trim());
-    params.set("path", el("path").value.trim());
-    if (el("field").value.trim()) params.set("field", el("field").value.trim());
-    params.set("name", el("name").value.trim());
-    params.set("layout", el("layout").value.trim() || "x");
-    params.set("neg", el("neg").value);
-    if (el("unit").value.trim()) params.set("unit", el("unit").value.trim());
-    if (el("factor").value && el("factor").value !== "1") params.set("factor", el("factor").value);
-    if (el("offset").value && el("offset").value !== "0") params.set("offset", el("offset").value);
-
-    const url = `${instrumentBaseUrl()}?${params.toString()}`;
-    el("urlBox").textContent = url;
-    el("openBtn").href = url;
-    return url;
-  }
-
-  presetSelect.addEventListener("change", () => applyPreset(PRESETS[presetSelect.value]));
-  form.addEventListener("input", () => { updateUrl(); updateDisplayUrl(); });
-
-  el("copyBtn").addEventListener("click", () => {
-    navigator.clipboard.writeText(updateUrl());
-  });
-
-  // --- Dumb display support: save this instrument config to SignalK's
-  // applicationData store, keyed by display id, so a kiosk pointed at
-  // ?display=<id> never needs its own config touched again. Reads are
-  // unauthenticated; SignalK requires a login for writes.
   const TOKEN_KEY = "sk_token";
 
-  function signalkOrigin() {
-    return `${window.location.protocol}//${el("host").value.trim()}`;
+  // The picker is served by SignalK itself, so the serving host is always
+  // the right server. ?host= overrides it for local testing against a
+  // different instance.
+  const HOST = new URLSearchParams(window.location.search).get("host") || window.location.host;
+  const ORIGIN = `${window.location.protocol}//${HOST}`;
+  const DATA_URL = `${ORIGIN}/signalk/v1/applicationData/global/signalk-bignumbers/1`;
+
+  // Directory this page lives in, so generated links work whether opened
+  // from disk or hosted by SignalK under /<webapp-name>/.
+  const INSTRUMENT_URL =
+    window.location.origin + window.location.pathname.replace(/[^/]*$/, "") + "instrument.html";
+
+  function setStatus(id, message, kind) {
+    const node = el(id);
+    node.textContent = message;
+    node.className = `status${kind ? " " + kind : ""}`;
   }
 
-  function applicationDataUrl() {
-    return `${signalkOrigin()}/signalk/v1/applicationData/global/signalk-bignumbers/1`;
+  // --- auth -------------------------------------------------------------
+  // Reads are anonymous; SignalK requires a login for every write, so the
+  // login state lives in a permanent bar rather than a collapsed section.
+  function token() {
+    return localStorage.getItem(TOKEN_KEY);
   }
 
-  function updateDisplayUrl() {
-    const id = el("displayId").value.trim();
-    el("displayUrlBox").textContent = id
-      ? `${instrumentBaseUrl()}?display=${encodeURIComponent(id)}`
-      : "(set a Display ID to see its URL)";
+  function renderAuth() {
+    const loggedIn = !!token();
+    el("authState").textContent = loggedIn ? "Logged in" : "Log in to add or change displays";
+    el("username").hidden = loggedIn;
+    el("password").hidden = loggedIn;
+    el("authBtn").textContent = loggedIn ? "Log out" : "Log in";
   }
 
-  function instrumentConfig() {
+  el("authBtn").addEventListener("click", async () => {
+    if (token()) {
+      localStorage.removeItem(TOKEN_KEY);
+      setStatus("authStatus", "");
+      renderAuth();
+      return;
+    }
+    setStatus("authStatus", "Logging in...");
+    try {
+      const res = await fetch(`${ORIGIN}/signalk/v1/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: el("username").value, password: el("password").value }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.token) throw new Error(data.message || `HTTP ${res.status}`);
+      localStorage.setItem(TOKEN_KEY, data.token);
+      el("password").value = "";
+      setStatus("authStatus", "");
+      renderAuth();
+    } catch (err) {
+      setStatus("authStatus", `Login failed: ${err.message}`, "error");
+    }
+  });
+
+  // --- store ------------------------------------------------------------
+  // One JSON document holds every display, keyed by code. Writes are always
+  // read-modify-write of the whole document.
+  async function loadAll() {
+    const res = await fetch(DATA_URL);
+    return res.ok ? res.json() : {};
+  }
+
+  async function saveAll(data) {
+    const res = await fetch(DATA_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token()}` },
+      body: JSON.stringify(data),
+    });
+    if (res.status === 401) {
+      localStorage.removeItem(TOKEN_KEY);
+      renderAuth();
+      throw new Error("session expired, log in again");
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  }
+
+  // --- list view --------------------------------------------------------
+  function showList() {
+    el("listView").hidden = false;
+    el("editorView").hidden = true;
+    refresh();
+  }
+
+  async function refresh() {
+    try {
+      renderRows(await loadAll());
+      setStatus("listStatus", "");
+    } catch (err) {
+      setStatus("listStatus", `Couldn't load displays: ${err.message}`, "error");
+    }
+  }
+
+  function renderRows(data) {
+    const rows = el("rows");
+    rows.textContent = "";
+    const codes = Object.keys(data).sort();
+
+    if (codes.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = "No displays configured yet. Add one using the code shown on a kiosk screen.";
+      rows.appendChild(empty);
+      return;
+    }
+
+    codes.forEach((code) => {
+      const cfg = data[code];
+      // Built with textContent, never innerHTML -- these values come from a
+      // shared server-side store that any client can write to.
+      const row = document.createElement("div");
+      row.className = "row";
+
+      const codeEl = document.createElement("span");
+      codeEl.className = "code";
+      codeEl.textContent = code;
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const nameEl = document.createElement("div");
+      nameEl.className = "name";
+      nameEl.textContent = cfg.name || "(unnamed)";
+      const pathEl = document.createElement("div");
+      pathEl.className = "path";
+      pathEl.textContent = (cfg.path || "") + (cfg.field ? "." + cfg.field : "");
+      meta.append(nameEl, pathEl);
+
+      const edit = document.createElement("button");
+      edit.type = "button";
+      edit.className = "secondary small";
+      edit.textContent = "Edit";
+      edit.addEventListener("click", () => showEditor(code, cfg));
+
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "danger small";
+      del.textContent = "Delete";
+      del.addEventListener("click", () => remove(code));
+
+      row.append(codeEl, meta, edit, del);
+      rows.appendChild(row);
+    });
+  }
+
+  async function remove(code) {
+    if (!token()) { setStatus("listStatus", "Log in first.", "error"); return; }
+    if (!confirm(`Delete display "${code}"?`)) return;
+    setStatus("listStatus", "Deleting...");
+    try {
+      const data = await loadAll();
+      delete data[code];
+      await saveAll(data);
+      setStatus("listStatus", `Deleted "${code}".`, "ok");
+      refresh();
+    } catch (err) {
+      setStatus("listStatus", `Delete failed: ${err.message}`, "error");
+    }
+  }
+
+  // --- editor view ------------------------------------------------------
+  const presetSelect = el("preset");
+  presetSelect.appendChild(new Option("— custom —", "custom"));
+  PRESETS.forEach((p, i) => {
+    presetSelect.appendChild(new Option(p.field ? `${p.path} -> ${p.field}` : p.path, i));
+  });
+
+  // Which code is being edited, or null when creating a new one. Editing
+  // keeps the code fixed so changing it can't silently create a duplicate
+  // entry instead of renaming the one you opened.
+  let editingCode = null;
+
+  function showEditor(code, cfg) {
+    editingCode = code || null;
+    el("listView").hidden = true;
+    el("editorView").hidden = false;
+    setStatus("editorStatus", "");
+
+    el("editorTitle").textContent = code ? "Edit display" : "New display";
+    el("editorSub").textContent = code ? code : "";
+    el("code").value = code || "";
+    el("code").disabled = !!code;
+    el("codeHint").textContent = code
+      ? "To change the code, delete this display and add it again."
+      : "The code shown on the kiosk's screen.";
+
+    if (cfg) {
+      applyConfig(cfg);
+      const match = PRESETS.findIndex((p) => p.path === cfg.path && (p.field || "") === (cfg.field || ""));
+      presetSelect.value = match >= 0 ? String(match) : "custom";
+    } else {
+      presetSelect.value = "0";
+      applyConfig(PRESETS[0]);
+    }
+    updateKioskUrl();
+  }
+
+  function applyConfig(c) {
+    el("name").value = c.name || "";
+    el("path").value = c.path || "";
+    el("field").value = c.field || "";
+    el("factor").value = c.factor !== undefined ? c.factor : 1;
+    el("offset").value = c.offset !== undefined ? c.offset : 0;
+    el("unit").value = c.unit || "";
+    el("layout").value = c.layout || "x";
+    el("neg").value = String(!!c.neg);
+  }
+
+  // The shape instrument.html reads, whether from this store or from URL
+  // params: path/name/layout/neg always, the rest only when meaningful.
+  function currentConfig() {
     const cfg = {
       path: el("path").value.trim(),
       name: el("name").value.trim(),
@@ -344,128 +554,61 @@
     return cfg;
   }
 
-  el("loginBtn").addEventListener("click", async () => {
-    el("loginStatus").textContent = "Logging in...";
-    try {
-      const res = await fetch(`${signalkOrigin()}/signalk/v1/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: el("username").value, password: el("password").value }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.token) throw new Error(data.message || `HTTP ${res.status}`);
-      localStorage.setItem(TOKEN_KEY, data.token);
-      el("password").value = "";
-      el("loginStatus").textContent = "Logged in.";
-    } catch (err) {
-      el("loginStatus").textContent = `Login failed: ${err.message}`;
-    }
+  function updateKioskUrl() {
+    const code = el("code").value.trim();
+    el("kioskUrlWrap").hidden = !code;
+    if (code) el("kioskUrl").textContent = `${INSTRUMENT_URL}?display=${encodeURIComponent(code)}`;
+  }
+
+  presetSelect.addEventListener("change", () => {
+    if (presetSelect.value !== "custom") applyConfig(PRESETS[presetSelect.value]);
   });
+  el("code").addEventListener("input", updateKioskUrl);
 
   el("saveBtn").addEventListener("click", async () => {
-    const displayId = el("displayId").value.trim();
-    if (!displayId) { el("saveStatus").textContent = "Set a Display ID first."; return; }
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) { el("saveStatus").textContent = "Log in first."; return; }
+    const code = el("code").value.trim();
+    if (!code) { setStatus("editorStatus", "Enter the display code first.", "error"); return; }
+    if (!token()) { setStatus("editorStatus", "Log in first (top of page).", "error"); return; }
 
-    el("saveStatus").textContent = "Saving...";
+    setStatus("editorStatus", "Saving...");
     try {
-      const current = await fetch(applicationDataUrl()).then((r) => (r.ok ? r.json() : {}));
-      current[displayId] = instrumentConfig();
-      const res = await fetch(applicationDataUrl(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify(current),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      el("saveStatus").textContent = `Saved "${displayId}".`;
-      loadDisplayList();
+      const data = await loadAll();
+      if (!editingCode && data[code] && !confirm(`"${code}" already exists. Overwrite it?`)) {
+        setStatus("editorStatus", "");
+        return;
+      }
+      data[code] = currentConfig();
+      await saveAll(data);
+      showList();
+      setStatus("listStatus", `Saved "${code}".`, "ok");
     } catch (err) {
-      el("saveStatus").textContent = `Save failed: ${err.message}`;
+      setStatus("editorStatus", `Save failed: ${err.message}`, "error");
     }
   });
 
-  // --- Configured displays list: view/edit/delete every code already
-  // saved in SignalK, reusing the same applicationData document and the
-  // same login token as the save flow above.
-  async function loadDisplayList() {
-    const listEl = el("displayList");
-    try {
-      const res = await fetch(applicationDataUrl());
-      renderDisplayList(res.ok ? await res.json() : {});
-    } catch (err) {
-      listEl.innerHTML = `<div class="list-empty">Couldn't load list: ${err.message}</div>`;
-    }
-  }
-
-  function renderDisplayList(data) {
-    const listEl = el("displayList");
-    const codes = Object.keys(data).sort();
-    if (codes.length === 0) {
-      listEl.innerHTML = '<div class="list-empty">No displays configured yet.</div>';
-      return;
-    }
-    listEl.innerHTML = "";
-    codes.forEach((code) => {
-      const cfg = data[code];
-      const row = document.createElement("div");
-      row.className = "display-row";
-      const info = `${cfg.name || "(no name)"} — ${cfg.path || ""}${cfg.field ? "." + cfg.field : ""}`;
-      row.innerHTML = `
-        <span class="code">${code}</span>
-        <span class="info">${info}</span>
-        <button type="button" class="secondary">Edit</button>
-        <button type="button" class="secondary">Delete</button>
-      `;
-      const [editBtn, deleteBtn] = row.querySelectorAll("button");
-      editBtn.addEventListener("click", () => loadIntoForm(code, cfg));
-      deleteBtn.addEventListener("click", () => deleteDisplay(code));
-      listEl.appendChild(row);
+  // Opens the current settings as a direct full-parameter instrument URL,
+  // so a config can be eyeballed before it's saved to any display.
+  el("previewBtn").addEventListener("click", () => {
+    const cfg = currentConfig();
+    const params = new URLSearchParams({
+      host: HOST, path: cfg.path, name: cfg.name, layout: cfg.layout, neg: String(cfg.neg),
     });
-  }
+    if (cfg.field) params.set("field", cfg.field);
+    if (cfg.unit) params.set("unit", cfg.unit);
+    if (cfg.factor !== undefined) params.set("factor", cfg.factor);
+    if (cfg.offset !== undefined) params.set("offset", cfg.offset);
+    window.open(`${INSTRUMENT_URL}?${params.toString()}`, "_blank");
+  });
 
-  function loadIntoForm(code, cfg) {
-    el("displayId").value = code;
-    el("name").value = cfg.name || "";
-    el("path").value = cfg.path || "";
-    el("field").value = cfg.field || "";
-    el("factor").value = cfg.factor !== undefined ? cfg.factor : 1;
-    el("offset").value = cfg.offset !== undefined ? cfg.offset : 0;
-    el("unit").value = cfg.unit || "";
-    el("layout").value = cfg.layout || "x";
-    el("neg").value = String(!!cfg.neg);
-    updateUrl();
-    updateDisplayUrl();
-  }
+  el("copyUrlBtn").addEventListener("click", () => {
+    navigator.clipboard.writeText(el("kioskUrl").textContent);
+  });
 
-  async function deleteDisplay(code) {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) { el("saveStatus").textContent = "Log in first."; return; }
-    if (!confirm(`Delete display "${code}"?`)) return;
+  el("cancelBtn").addEventListener("click", showList);
+  el("addBtn").addEventListener("click", () => showEditor(null, null));
 
-    el("saveStatus").textContent = "Deleting...";
-    try {
-      const current = await fetch(applicationDataUrl()).then((r) => (r.ok ? r.json() : {}));
-      delete current[code];
-      const res = await fetch(applicationDataUrl(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify(current),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      el("saveStatus").textContent = `Deleted "${code}".`;
-      loadDisplayList();
-    } catch (err) {
-      el("saveStatus").textContent = `Delete failed: ${err.message}`;
-    }
-  }
-
-  el("refreshListBtn").addEventListener("click", loadDisplayList);
-
-  el("host").value = window.location.host || "hl.local:3000";
-  applyPreset(PRESETS[0]);
-  updateDisplayUrl();
-  loadDisplayList();
+  renderAuth();
+  showList();
 </script>
 </body>
 </html>
