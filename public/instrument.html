@@ -142,8 +142,9 @@
   //   ?path=navigation.attitude&field=roll&name=Heel&layout=xx&neg=true&unit=%C2%B0&factor=57.29577951308232
   //   ?path=environment.water.temperature&name=SEA&layout=xx.x&unit=%C2%B0C&factor=1&offset=-273.15
   // ...or, for a "dumb" display that never needs its own config touched,
-  // just a display code -- the real config is fetched from SignalK itself:
-  //   ?display=f3a9
+  // just an identifier -- usually the Pi's hostname, via systemd's %H --
+  // and the real config is fetched from SignalK itself:
+  //   ?display=helm
   const params = new URLSearchParams(window.location.search);
   const displayId = params.get("display");
 
@@ -207,10 +208,10 @@
     showMessage(box);
   }
 
-  // Shown when a display id has no saved config yet -- the normal state
-  // for a freshly set-up kiosk. Puts the id itself front and center so
-  // whoever's looking at the physical screen can read it off and hand it
-  // to the picker page, no SSH access needed.
+  // Shown when a display has no saved config yet -- the normal state for
+  // a freshly set-up kiosk. Puts the identifier front and centre so
+  // whoever's looking at the physical screen can read it off and enter it
+  // in the webapp, no SSH access needed.
   function showUnconfigured() {
     document.title = `Unconfigured — ${displayId}`;
     titleEl.textContent = "";
@@ -242,8 +243,8 @@
   }
 
   // Fetches this display's config from the store the webapp saves to,
-  // keyed by display code. A missing config is the normal state for a
-  // freshly set-up display, so that case polls (showing the code) rather
+  // keyed by identifier. A missing config is the normal state for a
+  // freshly set-up display, so that case polls (showing the id) rather
   // than giving up -- it picks the config up as soon as it's saved, with
   // no restart needed. A genuine network/server problem still gives up
   // after a handful of quick retries and shows an error instead.
@@ -267,8 +268,12 @@
           setTimeout(() => fetchDisplayConfig(0), POLL_MS);
           return;
         }
+        // host isn't part of a stored config -- keep the one we're already
+        // talking to, or a ?host= override would be silently dropped here
+        // and the websocket would connect somewhere else.
         const getter = {
-          get: (k) => (raw[k] === undefined || raw[k] === null ? null : String(raw[k])),
+          get: (k) => (k === "host" ? CONFIG.host
+            : raw[k] === undefined || raw[k] === null ? null : String(raw[k])),
           has: (k) => raw[k] !== undefined && raw[k] !== null,
         };
         CONFIG = buildConfig(getter);
@@ -408,8 +413,10 @@
           if (!update.values) continue;
           for (const v of update.values) {
             if (v.path !== CONFIG.path) continue;
-            const raw = CONFIG.field ? v.value[CONFIG.field] : v.value;
-            if (raw !== null && raw !== undefined) updateValue(raw);
+            // v.value can be null when a source drops out, so don't index
+            // into it blindly -- that would throw and kill this handler.
+            const raw = CONFIG.field ? v.value && v.value[CONFIG.field] : v.value;
+            if (typeof raw === "number") updateValue(raw);
           }
         }
       };

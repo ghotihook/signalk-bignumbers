@@ -6,11 +6,16 @@ plain HTML/CSS/JS served as-is. `dev/dummy_signalk.py` is a standalone
 Python dev server for local testing, unrelated to the webapp build.
 
 `instrument.html` supports two config modes: full query-string params
-(`?path=...&name=...`), or `?display=<code>`, which fetches its config
-from SignalK's `applicationData` API — written there by `index.html`,
-which is a manager for those stored per-display configs. See
-`docs/raspberry-pi-kiosk.md` for the kiosk-display use case this was
-built for.
+(`?path=...&name=...`), or `?display=<hostname>`, which fetches its
+config from SignalK's `applicationData` API — written there by
+`index.html`, which is a manager for those stored per-display configs.
+The identifier is the display Pi's hostname, supplied by systemd's `%H`
+specifier. See `docs/raspberry-pi-kiosk.md` for the kiosk use case this
+was built for.
+
+`dev/dummy_signalk.py` only speaks the delta/websocket protocol, so it
+can drive `?path=...` URLs but not `?display=` ones — testing the stored
+-config path needs a real signalk-server.
 
 Writes to `applicationData` need a SignalK login even when reads are
 anonymous, and the endpoint takes `POST` (not `PUT`) — a `PUT` returns

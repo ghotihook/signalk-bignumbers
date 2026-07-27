@@ -41,8 +41,8 @@ means cog, the GPU and the network path to SignalK are all working.
 
 ## 3. Tell it what to show
 
-The display asks SignalK for whatever config is stored under its code
-(here, the hostname). Nothing is stored yet, so:
+The display asks SignalK for whatever config is stored under its
+hostname. Nothing is stored yet, so:
 
 1. Open `http://signalk.local:3000/signalk-bignumbers/` from any browser
    on the network — the webapp opens on a list of every display already
@@ -50,7 +50,7 @@ The display asks SignalK for whatever config is stored under its code
 2. Log in using the bar at the top. SignalK requires auth for writes even
    when reads are open, so this applies to this page only, never to a
    display. The token is kept in the browser's `localStorage`.
-3. Click **+ Add display**, enter the code shown on the kiosk's screen,
+3. Click **+ Add display**, enter the hostname shown on the kiosk's screen,
    pick the instrument, and **Save**. **Preview** opens the config in a
    new tab first if you want to eyeball it before saving.
 
@@ -66,13 +66,13 @@ make it permanent below.
 sudo systemctl disable getty@tty1.service
 ```
 
-**Create the service** at `/etc/systemd/system/signalk-display.service`,
+**Create the service** at `/etc/systemd/system/signalk-bignumbers.service`,
 with the same URL you tested above. `%H` is a systemd specifier for the
 hostname, so this file is identical on every Pi:
 
 ```ini
 [Unit]
-Description=SignalK instrument display
+Description=SignalK Big Numbers display
 After=systemd-user-sessions.service getty@tty1.service network-online.target
 Wants=network-online.target
 Conflicts=getty@tty1.service
@@ -104,30 +104,29 @@ consoleblank=0
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now signalk-display.service
+sudo systemctl enable --now signalk-bignumbers.service
 sudo reboot
 ```
 
 To check on it:
 
 ```bash
-systemctl status signalk-display.service
-journalctl -u signalk-display -f
-systemctl show signalk-display -p ExecStart   # confirm %H expanded to the hostname
+systemctl status signalk-bignumbers.service
+journalctl -u signalk-bignumbers -f
+systemctl show signalk-bignumbers -p ExecStart   # confirm %H expanded to the hostname
 ```
 
 ## Managing displays
 
 Each kiosk stays as dumb as possible: all it knows is its own hostname
 and where the SignalK server is — it asks for `?display=<hostname>` and
-takes whatever it's given. What that code shows lives on the SignalK
+takes whatever it's given. What that hostname shows lives on the SignalK
 server, in signalk-server's built-in `applicationData` store, so changing
 a display never means SSHing into the Pi again.
 
 In the webapp's list, **Edit** and **Delete** manage existing entries. A
-display's code is fixed once created — to change it, delete the entry and
-add it again, which keeps an edit from silently creating a duplicate
-under a new code.
+display's hostname is fixed once created — to point a different Pi at an
+instrument, delete the entry and add that Pi's hostname instead.
 
 **Colours** offers a few fixed high-contrast pairs, set per display. Red
 or amber on black preserve night vision at the helm; black on white or
@@ -139,9 +138,9 @@ Displays pick up changes on their own — an unconfigured one polls every
 config every 5s, reloading if it changed. So saving takes effect within a
 few seconds, and restarting the service is never needed to change what a
 display shows. Deleting an entry sends that display back to showing its
-code, ready to be reassigned. A Pi's local config only needs to change at
-all if you're pointing it at a different SignalK server, or swapping
-which code that Pi answers to.
+hostname, ready to be reassigned. A Pi's local config only needs to change
+at all if you're pointing it at a different SignalK server, or renaming
+the Pi itself.
 
 ---
 
@@ -170,7 +169,7 @@ first or the two fight over the display — DRM master isn't tied to which
 tty your SSH session is on:
 
 ```bash
-sudo systemctl stop signalk-display
+sudo systemctl stop signalk-bignumbers
 ```
 
 ### Verifying GPU acceleration
@@ -193,7 +192,7 @@ On a Zero 2 W (4 cores), steady-state CPU around 25% with load average
 compositing frames, three idle. Not a sign of trouble by itself; what's
 actually worth checking is that `/dev/dri/renderD128` exists.
 
-### The display code, and `%` in unit files
+### The display identifier, and `%` in unit files
 
 `%H` works because systemd expands specifiers in `ExecStart` before
 running it. That same expansion is a trap if you ever put a
@@ -209,8 +208,9 @@ session that isn't in a UTF-8 locale, and cog then rejects the URL as
 invalid UTF-8. Percent-encode them — `°` is `%C2%B0` (`%%C2%%B0` in a
 unit file).
 
-Using the hostname as the code means renaming the Pi changes its code,
+Using the hostname as the identifier means renaming the Pi changes it,
 and the display drops back to the unconfigured screen until you register
-the new name. Both are usually what you want. If you'd rather have a code
-that survives a rename, `%m` expands to the machine ID — but it's 32 hex
-characters, which is unpleasant to read off a screen and type in.
+the new name. Both are usually what you want. If you'd rather have an
+identifier that survives a rename, `%m` expands to the machine ID — but
+it's 32 hex characters, which is unpleasant to read off a screen and type
+in.
