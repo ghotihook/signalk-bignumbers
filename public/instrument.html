@@ -159,12 +159,18 @@
     valueEl.textContent = sampleDecPart !== undefined ? `${sampleIntPart}.${sampleDecPart}` : sampleIntPart;
     signEl.textContent = CONFIG.expectNegative ? "-" : "";
 
+    // A single measure-and-scale jump from a small baseline to a much larger
+    // target isn't perfectly accurate (subpixel rounding/hinting mean font
+    // metrics don't scale perfectly linearly across a big range), so refine
+    // over a few passes -- each one is a much smaller correction than the
+    // last and converges on the true fit.
+    const availW = window.innerWidth * 0.92;
+    const availH = window.innerHeight * 0.85;
     valueRowEl.style.fontSize = "10rem";
-    const rect = valueRowEl.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
+    for (let i = 0; i < 4; i++) {
+      const rect = valueRowEl.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) break;
       const baseSizePx = parseFloat(getComputedStyle(valueRowEl).fontSize);
-      const availW = window.innerWidth * 0.92;
-      const availH = window.innerHeight * 0.85;
       const scale = Math.min(availW / rect.width, availH / rect.height);
       valueRowEl.style.fontSize = `${baseSizePx * scale}px`;
     }

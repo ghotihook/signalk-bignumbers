@@ -139,29 +139,29 @@
   // factor/offset convert SignalK's SI-unit value into the shown unit:
   // scaled = raw * factor + offset
   const PRESETS = [
-    { label: "Apparent Wind Speed (AWS)", name: "AWS", path: "environment.wind.speedApparent", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.xx", neg: false },
-    { label: "True Wind Speed (TWS)", name: "TWS", path: "environment.wind.speedTrue", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.xx", neg: false },
-    { label: "Apparent Wind Angle (AWA)", name: "AWA", path: "environment.wind.angleApparent", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: true },
-    { label: "True Wind Angle (TWA)", name: "TWA", path: "environment.wind.angleTrueGround", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: true },
-    { label: "True Wind Direction (TWD)", name: "TWD", path: "environment.wind.directionTrue", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
-    { label: "Speed Over Ground (SOG)", name: "SOG", path: "navigation.speedOverGround", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.xx", neg: false },
-    { label: "Speed Through Water (STW)", name: "STW", path: "navigation.speedThroughWater", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.xx", neg: false },
-    { label: "Course Over Ground (COG)", name: "COG", path: "navigation.courseOverGroundTrue", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
-    { label: "Heading True (HDG-T)", name: "HDG", path: "navigation.headingTrue", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
-    { label: "Heading Magnetic (HDG-M)", name: "HDG", path: "navigation.headingMagnetic", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
-    { label: "Roll", name: "Roll", path: "navigation.attitude", field: "roll", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
-    { label: "Heel", name: "Heel", path: "navigation.attitude", field: "roll", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
-    { label: "Pitch / Trim", name: "Trim", path: "navigation.attitude", field: "pitch", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
-    { label: "Rudder Angle", name: "Rudder", path: "steering.rudderAngle", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
-    { label: "Depth Below Transducer", name: "Depth", path: "environment.depth.belowTransducer", factor: 1, offset: 0, unit: "m", layout: "xx.x", neg: false },
-    { label: "Depth Below Keel", name: "DBK", path: "environment.depth.belowKeel", factor: 1, offset: 0, unit: "m", layout: "xx.x", neg: false },
-    { label: "Depth Below Surface", name: "DBS", path: "environment.depth.belowSurface", factor: 1, offset: 0, unit: "m", layout: "xx.x", neg: false },
-    { label: "Water Temperature", name: "SEA", path: "environment.water.temperature", factor: 1, offset: -273.15, unit: "°C", layout: "xx.x", neg: true },
-    { label: "Outside Air Temperature", name: "AIR", path: "environment.outside.temperature", factor: 1, offset: -273.15, unit: "°C", layout: "xx.x", neg: true },
-    { label: "Trip Log", name: "TRIP", path: "navigation.trip.log", factor: 0.0005399568034557235, offset: 0, unit: "nm", layout: "xxx.x", neg: false },
-    { label: "Total Log", name: "LOG", path: "navigation.log", factor: 0.0005399568034557235, offset: 0, unit: "nm", layout: "xxxxx.x", neg: false },
-    { label: "GNSS Satellites in View", name: "SATS", path: "navigation.gnss.satellites", factor: 1, offset: 0, unit: "", layout: "xx", neg: false },
-    { label: "Battery Voltage (instance 0)", name: "BATT", path: "electrical.batteries.0.voltage", factor: 1, offset: 0, unit: "V", layout: "xx.x", neg: false },
+    { name: "AWS", path: "environment.wind.speedApparent", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.xx", neg: false },
+    { name: "TWS", path: "environment.wind.speedTrue", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.xx", neg: false },
+    { name: "AWA", path: "environment.wind.angleApparent", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: true },
+    { name: "TWA", path: "environment.wind.angleTrueGround", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: true },
+    { name: "TWD", path: "environment.wind.directionTrue", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
+    { name: "SOG", path: "navigation.speedOverGround", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.xx", neg: false },
+    { name: "STW", path: "navigation.speedThroughWater", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.xx", neg: false },
+    { name: "COG", path: "navigation.courseOverGroundTrue", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
+    { name: "HDG", path: "navigation.headingTrue", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
+    { name: "HDG", path: "navigation.headingMagnetic", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
+    { name: "Roll", path: "navigation.attitude", field: "roll", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
+    { name: "Heel", path: "navigation.attitude", field: "roll", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
+    { name: "Trim", path: "navigation.attitude", field: "pitch", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
+    { name: "Rudder", path: "steering.rudderAngle", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
+    { name: "Depth", path: "environment.depth.belowTransducer", factor: 1, offset: 0, unit: "m", layout: "xx.x", neg: false },
+    { name: "DBK", path: "environment.depth.belowKeel", factor: 1, offset: 0, unit: "m", layout: "xx.x", neg: false },
+    { name: "DBS", path: "environment.depth.belowSurface", factor: 1, offset: 0, unit: "m", layout: "xx.x", neg: false },
+    { name: "SEA", path: "environment.water.temperature", factor: 1, offset: -273.15, unit: "°C", layout: "xx.x", neg: true },
+    { name: "AIR", path: "environment.outside.temperature", factor: 1, offset: -273.15, unit: "°C", layout: "xx.x", neg: true },
+    { name: "TRIP", path: "navigation.trip.log", factor: 0.0005399568034557235, offset: 0, unit: "nm", layout: "xxx.x", neg: false },
+    { name: "LOG", path: "navigation.log", factor: 0.0005399568034557235, offset: 0, unit: "nm", layout: "xxxxx.x", neg: false },
+    { name: "SATS", path: "navigation.gnss.satellites", factor: 1, offset: 0, unit: "", layout: "xx", neg: false },
+    { name: "BATT", path: "electrical.batteries.0.voltage", factor: 1, offset: 0, unit: "V", layout: "xx.x", neg: false },
   ];
 
   const el = (id) => document.getElementById(id);
@@ -170,7 +170,7 @@
   PRESETS.forEach((p, i) => {
     const opt = document.createElement("option");
     opt.value = i;
-    opt.textContent = p.label;
+    opt.textContent = p.field ? `${p.path} -> ${p.field}` : p.path;
     presetSelect.appendChild(opt);
   });
 
