@@ -378,13 +378,29 @@
     return `${proto}//${CONFIG.host}/signalk/v1/applicationData/global/signalk-bignumbers/1`;
   }
 
+  // Returned in place of the config document when SignalK refuses the read.
+  const DENIED = "denied";
+
   function fetchDisplayConfig(attempt) {
     // Two-argument then(), not then().catch() -- the failure handler must
     // see fetch/parse errors only. Catching errors thrown by the success
     // handler too would retry it, starting a second websocket.
     fetch(configUrl())
-      .then((r) => (r.ok ? r.json() : {}))
+      .then((r) => {
+        // A display never logs in, so a 401/403 means SignalK isn't allowing
+        // anonymous reads -- a server setting, not a missing config. Told
+        // apart here because the two look identical further down: an empty
+        // document would land on the "not configured" screen and send
+        // whoever reads it off to add a display that's already there.
+        if (r.status === 401 || r.status === 403) return DENIED;
+        return r.ok ? r.json() : {};
+      })
       .then((data) => {
+        if (data === DENIED) {
+          showError(`${CONFIG.host} won't allow anonymous reads — turn on Security → Allow Readonly Access in SignalK`);
+          setTimeout(() => fetchDisplayConfig(0), POLL_MS);
+          return;
+        }
         const raw = data[displayId];
         if (!raw) {
           showUnconfigured();

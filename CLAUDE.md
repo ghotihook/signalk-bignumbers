@@ -147,6 +147,18 @@ Writes to `applicationData` need a SignalK login even when reads are
 anonymous, and the endpoint takes `POST` (not `PUT`) — a `PUT` returns
 401 unauthenticated and 404 once authenticated.
 
+Reads being anonymous is a server setting, not a given: with SignalK
+security on and **Allow Readonly Access** off, a display gets 401 for both
+its config and the stream, and it holds no credentials to fix that with.
+Two things depend on catching it. `instrument.html` tells 401/403 apart
+from an empty config document — the two are indistinguishable by the time
+you reach `data[displayId]`, and falling through to the "not configured"
+screen sends whoever reads it off to add a display that's already there.
+`checkAnonymousRead()` in `index.html` probes the same two endpoints with
+`credentials: "omit"`; the omit is the whole point, since SignalK's login
+cookie would otherwise authenticate the probe and pass it on a server
+where every display fails.
+
 ## Two invariants in instrument.html
 
 Both were bugs once; the code comments say so locally, but they're easy

@@ -153,6 +153,12 @@ Configs live in signalk-server's built-in `applicationData` store, keyed
 by that name. Displays read it anonymously; saving requires a SignalK
 login, which the webapp prompts for.
 
+A display holds no credentials, so if signalk-server's security is on it
+needs **Security → Settings → Allow Readonly Access** enabled, or nothing
+reaches the screen. The webapp checks this on load and warns if it's off,
+and a display that can't read its config says so instead of showing the
+"not configured" screen.
+
 ## Reading the screen
 
 The same principle from the other side: if a reading can't be trusted,

@@ -113,6 +113,19 @@
     padding: 0.4rem;
   }
 
+  /* --- warning banner --- */
+  .notice {
+    background: #2a2113;
+    border: 1px solid #6b5320;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #e8c98a;
+  }
+  .notice strong { color: #ffd98a; }
+
   /* --- display list --- */
   .list-head {
     display: flex;
@@ -244,6 +257,16 @@
     <button type="button" class="secondary small" id="authBtn">Log in</button>
   </div>
   <div class="status" id="authStatus"></div>
+
+  <!-- Shown only when the anonymous read check fails. Static text: the fix
+       is the same whichever request was refused. -->
+  <div class="notice" id="anonNotice" hidden>
+    <strong>Displays can't read from this server.</strong>
+    A display never logs in, and this server is refusing anonymous reads, so
+    every display will sit on its "not configured" screen however it's set up
+    here. Turn on <strong>Security → Settings → Allow Readonly Access</strong>
+    in the SignalK admin UI, then reload this page.
+  </div>
 
   <!-- ============ LIST VIEW ============ -->
   <section id="listView" class="stack">
@@ -499,6 +522,40 @@
       throw new Error("session expired, log in again");
     }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  }
+
+  // --- anonymous read check ---------------------------------------------
+  // A display holds no credentials: instrument.html reads its stored config
+  // and opens the stream with none at all. Both only work while SignalK's
+  // "Allow Readonly Access" is on, and with it off a display just shows its
+  // "not configured" screen -- which looks like a display waiting to be set
+  // up, not a server refusing it. So probe it here, where there's someone
+  // to read the answer, before anyone spends time configuring displays that
+  // can't come up.
+  //
+  // credentials: "omit" is what makes this a real test rather than a test of
+  // this browser: SignalK sets a session cookie at login, which would
+  // otherwise authenticate the probe and pass on a server where every
+  // display fails. Both surfaces are checked because the config read and the
+  // data read are separate endpoints.
+  async function checkAnonymousRead() {
+    // HEAD on the data endpoint: the answer is the status, and a boat's self
+    // vessel tree is a lot to download for it. Anything other than a refusal
+    // -- including a server that doesn't route HEAD -- stays quiet, so a
+    // check that can't tell never cries wolf.
+    const refused = async (url, method) => {
+      try {
+        const res = await fetch(url, { method, credentials: "omit" });
+        return res.status === 401 || res.status === 403;
+      } catch (err) {
+        return false; // unreachable server is a different fault, and the list reports it
+      }
+    };
+    const results = await Promise.all([
+      refused(DATA_URL, "GET"),
+      refused(`${ORIGIN}/signalk/v1/api/self`, "HEAD"),
+    ]);
+    el("anonNotice").hidden = !results.some(Boolean);
   }
 
   // --- list view --------------------------------------------------------
@@ -759,6 +816,7 @@
 
   renderAuth();
   showList();
+  checkAnonymousRead();
 </script>
 </body>
 </html>

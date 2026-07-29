@@ -76,6 +76,9 @@ hostname. Nothing is stored yet, so:
 2. Log in using the bar at the top. SignalK requires auth for writes even
    when reads are open, so this applies to this page only, never to a
    display. The token is kept in the browser's `localStorage`.
+   A display never logs in at all, so if SignalK's security is on it needs
+   **Security → Settings → Allow Readonly Access** enabled — the webapp
+   shows a warning at the top if it isn't.
 3. Click **+ Add display**, enter the hostname shown on the kiosk's screen,
    pick the instrument, and **Save**. **Preview** opens the config in a
    new tab first if you want to eyeball it before saving.
