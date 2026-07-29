@@ -372,6 +372,13 @@
               <option value="true">Yes</option>
             </select>
           </label>
+          <label>
+            Wrap to ±180°
+            <select data-f="wrap">
+              <option value="false">No</option>
+              <option value="true">Yes</option>
+            </select>
+          </label>
         </div>
       </details>
     </div>
@@ -385,8 +392,8 @@
   const PRESETS = [
     { name: "AWS", path: "environment.wind.speedApparent", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.x", neg: false },
     { name: "TWS", path: "environment.wind.speedTrue", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.x", neg: false },
-    { name: "AWA", path: "environment.wind.angleApparent", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: true },
-    { name: "TWA", path: "environment.wind.angleTrueWater", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: true },
+    { name: "AWA", path: "environment.wind.angleApparent", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: true, wrap: true },
+    { name: "TWA", path: "environment.wind.angleTrueWater", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: true, wrap: true },
     { name: "TWD", path: "environment.wind.directionTrue", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
     { name: "SOG", path: "navigation.speedOverGround", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.x", neg: false },
     { name: "STW", path: "navigation.speedThroughWater", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.x", neg: false },
@@ -732,6 +739,7 @@
     slot.f("unit").value = c.unit || "";
     slot.f("layout").value = c.layout || "x";
     slot.f("neg").value = String(!!c.neg);
+    slot.f("wrap").value = String(!!c.wrap);
   }
 
   // One value in the shape instrument.html reads, whether from this store
@@ -744,6 +752,7 @@
       path: v("path"), name: v("name"), layout: v("layout") || "x", neg: v("neg") === "true",
       bg: theme.bg, fg: theme.fg,
     };
+    if (v("wrap") === "true") item.wrap = true;
     if (v("field")) item.field = v("field");
     if (v("unit")) item.unit = v("unit");
     if (v("factor") && v("factor") !== "1") item.factor = parseFloat(v("factor"));

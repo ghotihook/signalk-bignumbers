@@ -192,6 +192,7 @@ instrument.html?path=environment.wind.speedApparent&name=AWS&layout=xx.xx&unit=k
 | `field` | Key to read from a compound value, e.g. `roll` |
 | `layout` | Digit template, e.g. `xxx` or `xx.xx` — sets the autosize and decimal places |
 | `neg` | `true` to reserve room for a minus sign |
+| `wrap` | `true` to fold the converted value into −180…180, for sources that send wind angle as 0…360 |
 | `unit` | Label shown after the number |
 | `factor`, `offset` | Unit conversion: `shown = raw * factor + offset` |
 | `bg`, `fg` | Theme colours for this value's band; unsuffixed they also set the screen's. Hex only (`#000000`, `#fff`) — anything else is ignored |
