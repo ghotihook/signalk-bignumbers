@@ -8,42 +8,89 @@ large enough to read from the rail.
 
 ## Why this exists
 
-The instruments are in the cockpit. The people who need them are on the
-rail, on the bow, at the mast — several metres away, at an angle, in
-spray, in anything from full sun to full dark, with half a second to look
-up mid-manoeuvre.
+A racing repeater has to do three things, and it has to do all three or
+it isn't worth the screen:
 
-This turns any screen with a browser into a repeater for that person. It
-does four things well:
+- **Perform.** What's on the mast has to be what the instrument is
+  reading right now, at whatever rate the sensor produces it — someone is
+  trimming to it.
+- **Be readable.** At a glance, from metres away, at an angle, in spray,
+  in anything from full sun to full dark.
+- **Be trivial to deploy.** Minutes from a bare screen to a live number,
+  with nothing installed and nothing configured on the display itself.
 
-- **Big.** One value fills the screen; three still fill a third each.
-  `fitDisplay()` sizes the glyphs to whatever panel it lands on, and
-  digits never shift sideways as the value changes, so the number stays
-  readable from a moving boat.
-- **Current.** Every SignalK delta paints the moment it arrives. Nothing
-  is buffered, batched, rate-limited, animated or smoothed on the way to
-  the glass. See [Latency and load](#latency-and-load).
-- **Honest.** A value that stops updating for 3 seconds drops to grey
-  dashes rather than holding its last reading, so a dead sensor looks
-  dead instead of looking like a becalmed boat.
-- **Zero-touch.** A display knows only its own name. What it shows lives
-  on the SignalK server, so changing it never means climbing to the mast
-  or SSHing into anything.
+How it meets them — and it does nothing else:
+
+**Fast.** A delta arrives and paints. No queue, no batch, no
+`requestAnimationFrame`, no animation to tween through. See [Latency and
+load](#latency-and-load).
+
+**No buffering, no rate limits.** Nothing between the data and the screen
+runs on a timer. Subscriptions are `policy: "instant"` with no `period`
+and no `minPeriod`, so values arrive as they change rather than on a
+schedule, and a 10 Hz source updates the screen ten times a second.
+Nothing is smoothed, averaged or damped on the
+way through — damping is latency wearing a different hat, and belongs
+upstream in SignalK where every display gets it. Given the choice between
+showing an update late and not showing it, this drops it.
+
+**Large, clear numbers.** One value fills the screen; three still fill a
+third each, all at the same digit size so the screen reads as one
+instrument. Fixed high-contrast themes, not a colour picker — nothing you
+can select washes out in sun or wrecks night vision.
+
+**Digits that don't jump.** A number whose digits shift sideways as it
+changes can't be read from a moving boat: the eye re-finds the decimal
+point every update instead of taking the value in at a glance. So the
+layout is fixed before any value arrives. The digit template (`xx.x`)
+reserves a column per digit, the figures are `tabular-nums` so every
+glyph is the same width, leading zeros are hidden rather than removed so
+they keep occupying their space, and a value that can go negative
+reserves its minus column whether or not it's currently using it. 9.9 to
+10.0 and back moves nothing but the digits themselves.
+
+**No bloat.** Two static HTML pages. No build step, no bundler, no
+framework, no runtime dependencies, no backend, no plugin. Light enough
+that a Pi Zero 2 W runs a display with headroom to spare.
+
+**Nothing to install, nothing to configure — on the display.** Anything
+with a browser is a display the moment you open a URL on it: a phone, an
+old iPad, a laptop, a Pi with an HDMI panel. Deploying one is open the
+URL, read the name off the screen, add it in the webapp. Configuring it
+is picking an instrument from a dropdown — the preset fills in the path,
+the unit conversion and the digit format. A display holds no config and
+no credentials of its own, so changing what it shows never means touching
+it again.
 
 It is deliberately **not an MFD**: no charts, no gauges, no graphs, no
 history, no AIS, no alarms, nothing to touch. Anything on screen that
 isn't a number, its label or its unit costs reading distance.
 
+The one place it deliberately shows less: a value that stops updating for
+3 seconds drops to grey dashes rather than holding its last reading, so a
+dead sensor looks dead instead of looking like a becalmed boat.
+
 <img src="docs/images/display-mast-three.jpg" alt="A mast-mounted screen showing three stacked bands: STW 0.0 kt black on white, SOG 0.0 kt white on black, AWS 6.4 kt cyan on black" width="520">
 
 ## Quick start
 
-Five minutes, a phone and a running SignalK server.
+Five minutes, using a phone as the display. Nothing to install on the
+phone, and nothing here is a decision you're stuck with.
 
-**1. Install the webapp.** In SignalK's admin UI: *Appstore → Available →
-`signalk-bignumbers` → Install*, then restart the server.
+**1. Install the webapp** on the SignalK server — the only thing that
+gets installed anywhere:
 
-**2. Open it on the phone.** Substitute your own server address for
+```bash
+cd ~/.signalk
+npm install github:ghotihook/signalk-bignumbers
+sudo systemctl restart signalk    # or however your server is run
+```
+
+**SignalK Displays** then appears in the server's Webapps menu. See
+[Installing and updating](#installing-and-updating) for what that command
+does.
+
+**2. Open this on the phone.** Substitute your own server address for
 `signalk.local:3000` throughout — it's the same host and port you use to
 reach SignalK's admin UI.
 
@@ -51,41 +98,48 @@ reach SignalK's admin UI.
 http://signalk.local:3000/signalk-bignumbers/instrument.html?display=phone
 ```
 
-The screen fills with the word `phone`. That's a display saying it has no
-config yet, which is exactly right — and it proves the network path to
-SignalK works. Below, the same screen on a Pi named `mast1`:
+The screen fills with the word `phone` and "Not configured yet". That's
+the display telling you its name and that nothing is stored under it,
+which is exactly right — and it proves the network path to SignalK works.
 
-<img src="docs/images/display-unconfigured.jpg" alt="A screen showing the name mast1 in large pale blue text on dark blue, above the line: Not configured yet — add this hostname in the SignalK Displays webapp" width="520">
+`phone` is just a label you chose in the URL. Pick anything; you'll type
+the same word in the next step.
 
-**3. Tell it what to show.** From any browser open
-`http://signalk.local:3000/signalk-bignumbers/` (also in SignalK's
-Webapps menu). Log in at the top, **+ Add display**, type `phone`, pick an
-instrument, **Save**.
+**3. Tell it what to show.** From any browser — the phone, a laptop,
+anything — open `http://signalk.local:3000/signalk-bignumbers/` (also in
+SignalK's Webapps menu). Log in at the top, **+ Add display**, type
+`phone`, pick an instrument, **Save**.
 
-![The webapp's display list: rows for mast1 showing STW and phone showing STW, TWA and TWS, each with Edit and Delete buttons](docs/images/webapp-displays.png)
+![The webapp's display list: a row for phone showing STW, TWA and TWS, alongside a mast1 row from an earlier setup, each with Edit and Delete buttons](docs/images/webapp-displays.png)
 
 **4. Watch the phone.** Within about 5 seconds it switches from its name
 to the number. No reload, no restart.
 
-That display is now done forever. Changing what it shows is **Edit** in
-that list — the device is never touched again.
-
 <img src="docs/images/display-phone.png" alt="A phone showing three stacked bands: STW 0.0 kt white on black, TWA 13 degrees black on white, TWS 16.2 kt white on black" width="260">
 
-Going from one value to three is **+ Add another number** in the webapp.
-Nothing on the phone changes.
+That phone is now done. Changing what it shows is **Edit** in that list,
+and going from one value to three is **+ Add another number** — nothing
+on the phone changes either time.
 
 ## Proper install
 
-The quick start is already the whole software install. What's left is
-making a device stay on the air unattended.
+The quick start is already the whole software install — the webapp is the
+only thing that ever gets installed anywhere. What's left is making a
+device stay on the air unattended.
+
+Both kinds of display work identically once running. They differ in one
+thing only: **where the name comes from.** On a phone or tablet you type
+it into the URL. On a Pi, systemd fills in the hostname, so the same
+service file works on every Pi in the fleet and nothing is typed twice.
 
 ### Phone or tablet
 
 Best for a repeater someone carries, or a screen taped up for a race and
-taken home after.
+taken home after. An old iPad in a waterproof case makes a good mast
+display; a phone makes a good pit or bow repeater.
 
-1. Open the display URL in Safari or Chrome.
+1. Open the display URL in Safari or Chrome, with a name you pick:
+   `.../instrument.html?display=bow`
 2. **Add to Home Screen** — it launches fullscreen, with no address bar.
 3. **Turn off auto-lock.** The page holds no wake-lock, so a screen
    timeout takes the display off the air. On iOS: *Settings → Display &
@@ -96,12 +150,9 @@ taken home after.
    from: iOS *Guided Access* (*Settings → Accessibility → Guided
    Access*), triple-click to lock it to the page.
 
-Use a name in `?display=` that says where it is — `mast`, `bow`, `helm` —
-not the device's name. Swapping in a different phone then means opening
-one URL, with nothing to change in the webapp.
-
-An old iPad makes an excellent mast display in a waterproof case. A phone
-makes a good pit or bow repeater.
+Name it for where it goes — `bow`, `pit`, `helm` — not for the device.
+Swapping in a different phone is then one URL to open, with nothing to
+change in the webapp.
 
 ### Raspberry Pi Zero 2 W (permanent mast display)
 
@@ -118,16 +169,18 @@ In outline:
    compositor between the delta and the glass.
 3. Test by hand:
    `cog --platform=drm "http://signalk.local:3000/signalk-bignumbers/instrument.html?display=$(hostname)"`
-4. Make it permanent with a systemd unit using `%H` for the hostname, so
-   the same file works on every Pi in the fleet.
+4. Make it permanent with a systemd unit using `%H` in place of the
+   hostname, so the file is identical on every Pi.
 5. Free tty1 (`systemctl disable getty@tty1`) and add `consoleblank=0` to
    `/boot/firmware/cmdline.txt`.
 
-The Pi's name on screen is its hostname, so setup is: plug it in, read
-the name off the screen, add it in the webapp.
+Because the name is the hostname, deploying one is: name the Pi, plug it
+in, read the name off its screen, add it in the webapp.
 
-Measured on a Zero 2 W showing one live value: about 3% of the machine,
-load average 0.06, 216MB of 416MB used.
+<img src="docs/images/display-unconfigured.jpg" alt="A Pi's screen showing the hostname mast1 in large pale blue text on dark blue, above the line: Not configured yet — add this hostname in the SignalK Displays webapp" width="520">
+
+It's extremely light weight and runs easily on a Pi Zero 2 W, with plenty
+of headroom left over.
 
 ### What else can be a display
 
@@ -148,17 +201,34 @@ mast Pi and a borrowed phone.
 
 # Reference
 
-## Installing by hand
+## Installing and updating
 
-It's a SignalK webapp — static files, no plugin and no backend.
+It's a SignalK webapp — static files, no plugin and no backend. It isn't
+on the npm registry, so it isn't in SignalK's Appstore either; install it
+straight from GitHub, which gets the current `main`:
 
 ```bash
 cd ~/.signalk
-npm install signalk-bignumbers
+npm install github:ghotihook/signalk-bignumbers
 sudo systemctl restart signalk    # or however your server is run
 ```
 
-For the development version: `npm install ghotihook/signalk-bignumbers`.
+`github:owner/repo` tells npm to clone the repo rather than look the name
+up in the registry. Add `#<tag>` or `#<branch>` to pin a version instead
+of tracking `main`:
+
+```bash
+npm install github:ghotihook/signalk-bignumbers#0.0.5
+```
+
+Updating is the same command again — npm re-clones — followed by a
+restart. `cd ~/.signalk` matters: signalk-server scans that directory's
+`node_modules` for webapps at startup, so installing anywhere else leaves
+it invisible.
+
+Once the server restarts, **SignalK Displays** appears in its Webapps
+menu, and the pages are served at
+`http://<your-server>:3000/signalk-bignumbers/`.
 
 ## The webapp
 
