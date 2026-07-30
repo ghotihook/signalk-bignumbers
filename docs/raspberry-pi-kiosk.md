@@ -1,43 +1,25 @@
 # Raspberry Pi kiosk display setup
 
 Boot a Raspberry Pi straight into a fullscreen signalk-bignumbers
-instrument, with no desktop environment.
+instrument, with no desktop environment: straight to the framebuffer, no
+compositor, no input devices, nothing between the SignalK delta and the
+glass.
 
-The target is a mast or repeater display for racing: a screen the crew
-read from several metres away, showing nothing but the numbers. Everything
-below is chosen for that — straight to the framebuffer, no compositor, no
-input devices, nothing between the SignalK delta and the glass.
-
-**A Pi is only one way to get a display.** The instrument is a plain web
-page, so an iPhone, an iPad, an old Android tablet or a laptop is a
-display the moment you open the URL on it — nothing to install, and they
-are managed from the same list as the Pis. Use this guide when you want a
-screen that is *permanent*: one that comes up by itself on power, has no
-battery to charge or lock screen to swipe past, and can be left on the
-mast in the rain. For everything else, just open the URL:
-
-```
-http://signalk.local:3000/signalk-bignumbers/instrument.html?display=phone
-```
-
-and add `phone` (or whatever name you used) in the webapp. On iOS or
-Android, **Add to Home Screen** makes it a one-tap launch, and turning
-off the screen auto-lock keeps it up.
+Use this when you want a display that's *permanent* — one that comes up
+by itself on power, has no battery to charge or lock screen to swipe
+past, and can be left on the mast in the rain. A phone or tablet needs
+none of it: open the URL and add the name in the webapp.
 
 Written for a Pi Zero 2 W with an HDMI screen, running Raspberry Pi OS
-(Trixie) console-only. Everything below runs on the Pi over SSH.
+(Trixie) console-only. Everything below runs on the Pi over SSH, and
+assumes the webapp is already installed on the SignalK server (see
+[the README](../README.md#installing-and-updating)).
 
-**One thing to substitute throughout:** the examples use
-`signalk.local:3000` as the address of your SignalK server. Replace it
-with your own — it's the same host and port you'd type into a browser to
-reach SignalK's admin UI, e.g. `192.168.1.50:3000` or `mypi.local:3000`.
-The quickest way to be sure: open this webapp in a browser and copy the
-host from the address bar.
-
-Note this is the *SignalK server's* address, not the Pi's. They're
-usually different machines — the Pi is a dumb screen that fetches
-everything from SignalK over the network. They can be the same box if
-SignalK runs on the Pi itself, in which case `localhost:3000` works.
+**Substitute throughout:** `signalk.local:3000` stands for your SignalK
+server — the same host and port you use to reach its admin UI, e.g.
+`192.168.1.50:3000`. That's the *server's* address, not the Pi's: the Pi
+is a dumb screen that fetches everything over the network. If SignalK
+runs on the Pi itself, `localhost:3000`.
 
 ## 1. Install cog
 
@@ -58,10 +40,9 @@ The HDMI screen should show the Pi's hostname in large text:
 
 <img src="images/display-unconfigured.jpg" alt="The Pi's screen showing the hostname mast1 in large pale blue text on dark blue, above the line: Not configured yet — add this hostname in the SignalK Displays webapp" width="520">
 
-That's a display saying "I have no config yet" — which is exactly right,
-and it means cog, the GPU and the network path to SignalK are all
-working. It also tells you the name to type into the webapp in the next
-step.
+That's a display saying "I have no config yet", which means cog, the GPU
+and the network path to SignalK are all working. It also tells you the
+name to type into the webapp next.
 
 `Ctrl+C` stops it. Leave it running for the next step.
 
@@ -71,17 +52,14 @@ The display asks SignalK for whatever config is stored under its
 hostname. Nothing is stored yet, so:
 
 1. Open `http://signalk.local:3000/signalk-bignumbers/` from any browser
-   on the network — the webapp opens on a list of every display already
-   configured. (It's also linked from SignalK's own Webapps menu.)
+   on the network, or from SignalK's Webapps menu.
 2. Log in using the bar at the top. SignalK requires auth for writes even
-   when reads are open, so this applies to this page only, never to a
-   display. The token is kept in the browser's `localStorage`.
-   A display never logs in at all, so if SignalK's security is on it needs
-   **Security → Settings → Allow Readonly Access** enabled — the webapp
-   shows a warning at the top if it isn't.
-3. Click **+ Add display**, enter the hostname shown on the kiosk's screen,
-   pick the instrument, and **Save**. **Preview** opens the config in a
-   new tab first if you want to eyeball it before saving.
+   when reads are open, so this applies to this page only. A display
+   never logs in, so if SignalK's security is on it needs **Security →
+   Settings → Allow Readonly Access** enabled — the webapp warns at the
+   top if it isn't.
+3. **+ Add display**, enter the hostname shown on the kiosk's screen,
+   pick the instrument, **Save**.
 
 ![The webapp's display list, with rows for mast1 and phone showing the instruments each is displaying](images/webapp-displays.png)
 
@@ -153,44 +131,24 @@ systemctl show signalk-bignumbers -p ExecStart   # confirm %H expanded to the ho
 
 ## Managing displays
 
-Each kiosk stays as dumb as possible: all it knows is its own hostname
-and where the SignalK server is — it asks for `?display=<hostname>` and
-takes whatever it's given. What that hostname shows lives on the SignalK
-server, in signalk-server's built-in `applicationData` store, so changing
-a display never means SSHing into the Pi again.
+The kiosk stays as dumb as possible: all it knows is its own hostname and
+where the SignalK server is. It asks for `?display=<hostname>` and takes
+whatever it's given, so everything about what it shows is managed in the
+webapp — see [the README](../README.md#the-webapp) for the fields.
 
-Phones, tablets and laptops appear in the same list and work the same
-way; their name is whatever you put in the URL rather than something
-systemd fills in, so a mixed fleet of mast Pis and borrowed phones is
-managed from one page with no distinction between them.
+Two things follow that matter on a Pi:
 
-In the webapp's list, **Edit** and **Delete** manage existing entries. A
-display's name is fixed once created — to point a different device at an
-instrument, delete the entry and add that device's name instead.
+- **Its local config never changes again**, unless you point it at a
+  different SignalK server or rename the Pi. Going from one number to
+  three is a save in the webapp; the Pi still just asks for
+  `?display=<hostname>`. Restarting the service to change a display is
+  never necessary.
+- **Renaming the Pi changes its identity.** It drops back to the
+  unconfigured screen until you register the new name.
 
-**+ Add another number** puts a second or third value on the same screen.
-They split it into equal horizontal bands, top to bottom in the order
-listed, and all render at the same digit size. The kiosk URL doesn't
-change — the Pi still just asks for `?display=<hostname>` — so going from
-one number to three is a save in the webapp, nothing on the Pi.
-
-**Colours** offers a few fixed high-contrast pairs, set per value. Red
-or amber on black preserve night vision at the helm; black on white or
-black on amber read better in direct sun. Each display can differ, so a
-cockpit screen and a nav-station screen don't have to match — and on a
-multi-value screen one band can differ from its neighbours, to pick out
-the number you most want to catch your eye. Worth using sparingly: mixed
-backgrounds cost some of the dark adaptation the night themes exist to
-protect.
-
-Displays pick up changes on their own — an unconfigured one polls every
-5s waiting for a config to appear, and a running one re-checks its own
-config every 5s, reloading if it changed. So saving takes effect within a
-few seconds, and restarting the service is never needed to change what a
-display shows. Deleting an entry sends that display back to showing its
-hostname, ready to be reassigned. A Pi's local config only needs to change
-at all if you're pointing it at a different SignalK server, or renaming
-the Pi itself.
+Phones and tablets appear in the same list and work the same way, their
+name coming from the URL rather than from systemd, so a mixed fleet is
+managed from one page.
 
 ---
 
@@ -271,9 +229,6 @@ session that isn't in a UTF-8 locale, and cog then rejects the URL as
 invalid UTF-8. Percent-encode them — `°` is `%C2%B0` (`%%C2%%B0` in a
 unit file).
 
-Using the hostname as the identifier means renaming the Pi changes it,
-and the display drops back to the unconfigured screen until you register
-the new name. Both are usually what you want. If you'd rather have an
-identifier that survives a rename, `%m` expands to the machine ID — but
-it's 32 hex characters, which is unpleasant to read off a screen and type
-in.
+If you'd rather have an identifier that survives a rename, `%m` expands
+to the machine ID — but it's 32 hex characters, unpleasant to read off a
+screen and type in.
