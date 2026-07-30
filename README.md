@@ -4,66 +4,224 @@ Big, high-contrast number displays for [SignalK](https://signalk.org) —
 mast and repeater screens for racing, showing one, two or three values
 large enough to read from the rail.
 
-![A Raspberry Pi driving an HDMI screen: the label STW, the number 0.0 filling the screen, and the unit kt, black on pale blue](docs/images/display-hdmi.jpg)
+![A screen strapped to a mast in bright sun, filled by the number 0.0 labelled STW and kt, black on white](docs/images/display-mast.jpg)
 
-It is deliberately **not an MFD**: no charts, no gauges, no graphs or
-history, nothing to touch. Just the numbers, as large, as current and as
-legible as the screen allows, for someone who has half a second to look
+## Why this exists
+
+The instruments are in the cockpit. The people who need them are on the
+rail, on the bow, at the mast — several metres away, at an angle, in
+spray, in anything from full sun to full dark, with half a second to look
 up mid-manoeuvre.
 
-Values render the moment each SignalK delta arrives — nothing is
-buffered, batched, rate-limited or smoothed on the way to the screen.
-See [Latency and load](#latency-and-load).
+This turns any screen with a browser into a repeater for that person. It
+does four things well:
 
-A display is anything with a browser — a Raspberry Pi with an HDMI panel,
-a phone, a tablet, a laptop. They all open the same page, and none of them
-needs anything installed.
+- **Big.** One value fills the screen; three still fill a third each.
+  `fitDisplay()` sizes the glyphs to whatever panel it lands on, and
+  digits never shift sideways as the value changes, so the number stays
+  readable from a moving boat.
+- **Current.** Every SignalK delta paints the moment it arrives. Nothing
+  is buffered, batched, rate-limited, animated or smoothed on the way to
+  the glass. See [Latency and load](#latency-and-load).
+- **Honest.** A value that stops updating for 3 seconds drops to grey
+  dashes rather than holding its last reading, so a dead sensor looks
+  dead instead of looking like a becalmed boat.
+- **Zero-touch.** A display knows only its own name. What it shows lives
+  on the SignalK server, so changing it never means climbing to the mast
+  or SSHing into anything.
 
-Each display knows only the name in its URL. What it shows is stored on
-the SignalK server and managed from a web page, so changing what a display
-shows doesn't mean touching it.
+It is deliberately **not an MFD**: no charts, no gauges, no graphs, no
+history, no AIS, no alarms, nothing to touch. Anything on screen that
+isn't a number, its label or its unit costs reading distance.
 
-## The webapp
+<img src="docs/images/display-mast-three.jpg" alt="A mast-mounted screen showing three stacked bands: STW 0.0 kt black on white, SOG 0.0 kt white on black, AWS 6.4 kt cyan on black" width="520">
 
-![The webapp's display list: rows for mast1 showing STW, mast2 showing TWA, and phone showing STW, TWA and TWS, each with Edit and Delete buttons](docs/images/webapp-displays.png)
+## Quick start
 
-One row per display, showing what it's currently set to. **Edit** changes
-it, and the display picks the change up within about 5 seconds.
+Five minutes, a phone and a running SignalK server.
 
-On a kiosk Pi the name is the hostname, filled in by systemd, so every Pi
-runs the same service file. A display with no entry in the list shows its
-own name instead:
+**1. Install the webapp.** In SignalK's admin UI: *Appstore → Available →
+`signalk-bignumbers` → Install*, then restart the server.
 
-![A Pi HDMI screen showing the hostname mast1 in large text, above the line "Not configured yet — add this hostname in the SignalK Displays webapp"](docs/images/display-unconfigured.jpg)
+**2. Open it on the phone.** Substitute your own server address for
+`signalk.local:3000` throughout — it's the same host and port you use to
+reach SignalK's admin UI.
 
-So setting one up is: plug it in, read the name off the screen, add it to
-the list.
+```
+http://signalk.local:3000/signalk-bignumbers/instrument.html?display=phone
+```
 
-## What can be a display
+The screen fills with the word `phone`. That's a display saying it has no
+config yet, which is exactly right — and it proves the network path to
+SignalK works. Below, the same screen on a Pi named `mast1`:
 
-The instrument is one static HTML page, no build step and no
-dependencies, so most things with a browser will run it.
+<img src="docs/images/display-unconfigured.jpg" alt="A screen showing the name mast1 in large pale blue text on dark blue, above the line: Not configured yet — add this hostname in the SignalK Displays webapp" width="520">
+
+**3. Tell it what to show.** From any browser open
+`http://signalk.local:3000/signalk-bignumbers/` (also in SignalK's
+Webapps menu). Log in at the top, **+ Add display**, type `phone`, pick an
+instrument, **Save**.
+
+![The webapp's display list: rows for mast1 showing STW and phone showing STW, TWA and TWS, each with Edit and Delete buttons](docs/images/webapp-displays.png)
+
+**4. Watch the phone.** Within about 5 seconds it switches from its name
+to the number. No reload, no restart.
+
+That display is now done forever. Changing what it shows is **Edit** in
+that list — the device is never touched again.
+
+<img src="docs/images/display-phone.png" alt="A phone showing three stacked bands: STW 0.0 kt white on black, TWA 13 degrees black on white, TWS 16.2 kt white on black" width="260">
+
+Going from one value to three is **+ Add another number** in the webapp.
+Nothing on the phone changes.
+
+## Proper install
+
+The quick start is already the whole software install. What's left is
+making a device stay on the air unattended.
+
+### Phone or tablet
+
+Best for a repeater someone carries, or a screen taped up for a race and
+taken home after.
+
+1. Open the display URL in Safari or Chrome.
+2. **Add to Home Screen** — it launches fullscreen, with no address bar.
+3. **Turn off auto-lock.** The page holds no wake-lock, so a screen
+   timeout takes the display off the air. On iOS: *Settings → Display &
+   Brightness → Auto-Lock → Never*.
+4. Keep it on power. A bright screen showing live data is not a light
+   load on a battery.
+5. Optional, for a screen the crew shouldn't be able to navigate away
+   from: iOS *Guided Access* (*Settings → Accessibility → Guided
+   Access*), triple-click to lock it to the page.
+
+Use a name in `?display=` that says where it is — `mast`, `bow`, `helm` —
+not the device's name. Swapping in a different phone then means opening
+one URL, with nothing to change in the webapp.
+
+An old iPad makes an excellent mast display in a waterproof case. A phone
+makes a good pit or bow repeater.
+
+### Raspberry Pi Zero 2 W (permanent mast display)
+
+Best for a screen that lives on the boat: it comes up by itself on power,
+has no battery to charge or lock screen to swipe past, and doesn't mind
+the rain.
+
+Full walkthrough: **[docs/raspberry-pi-kiosk.md](docs/raspberry-pi-kiosk.md)**.
+In outline:
+
+1. Raspberry Pi OS (Trixie) console-only, no desktop.
+2. `sudo apt install -y cog` — a minimal WPE WebKit shell that renders
+   straight to the framebuffer via DRM/KMS. No X11, no Wayland, no
+   compositor between the delta and the glass.
+3. Test by hand:
+   `cog --platform=drm "http://signalk.local:3000/signalk-bignumbers/instrument.html?display=$(hostname)"`
+4. Make it permanent with a systemd unit using `%H` for the hostname, so
+   the same file works on every Pi in the fleet.
+5. Free tty1 (`systemctl disable getty@tty1`) and add `consoleblank=0` to
+   `/boot/firmware/cmdline.txt`.
+
+The Pi's name on screen is its hostname, so setup is: plug it in, read
+the name off the screen, add it in the webapp.
+
+Measured on a Zero 2 W showing one live value: about 3% of the machine,
+load average 0.06, 216MB of 416MB used.
+
+### What else can be a display
+
+The instrument is one static HTML page — no build step, no framework, no
+dependencies — so most things with a browser will run it.
 
 | Display | How it opens the page |
 |---|---|
 | Raspberry Pi Zero 2 W + HDMI panel | boots into it fullscreen, hostname as its name ([guide](docs/raspberry-pi-kiosk.md)) |
-| iPhone / iPad | open the URL in Safari, **Add to Home Screen** |
-| Android phone or tablet | same, via Chrome's **Add to Home screen** |
+| iPhone / iPad | Safari, **Add to Home Screen** |
+| Android phone or tablet | Chrome, **Add to Home screen** |
 | Laptop | any browser, fullscreen |
 
-Below is the `phone` row from the list above — the same page as the mast
-Pis, with a different stored config:
+Mixed fleets are managed from one list, with no distinction between a
+mast Pi and a borrowed phone.
 
-<img src="docs/images/display-phone.png" alt="A phone showing three stacked bands: STW 0.0 kt white on black, TWA 13° black on white, TWS 16.2 kt white on black" width="260">
+---
 
-Going from one value to three was **+ Add another number** in the webapp.
-Nothing on the phone changed.
+# Reference
 
-An old phone makes a good repeater. The mast wants a Pi, which comes back
-on its own after a power cut and doesn't mind the rain.
+## Installing by hand
 
-Set a phone or tablet to never auto-lock. The page holds no wake-lock, so
-the screen timeout will take it off the air.
+It's a SignalK webapp — static files, no plugin and no backend.
+
+```bash
+cd ~/.signalk
+npm install signalk-bignumbers
+sudo systemctl restart signalk    # or however your server is run
+```
+
+For the development version: `npm install ghotihook/signalk-bignumbers`.
+
+## The webapp
+
+One row per display, showing what it's currently set to. **Edit** changes
+it and the display picks the change up within about 5 seconds; **Delete**
+sends it back to showing its own name, ready to be reassigned. A
+display's name is fixed once created.
+
+<img src="docs/images/webapp-edit.png" alt="The display editor: dropdowns for Instrument and Colours, a Display name field, and an expanded Advanced section with Path, Field, Factor, Offset, Unit, Layout and Negative" width="460">
+
+Per value:
+
+| Field | Meaning |
+|---|---|
+| **Instrument** | A preset — AWS, TWA, SOG, STW, HDG, Depth, Heel, BATT and others. Fills in everything below. |
+| **Colours** | Fixed high-contrast pairs, not a colour picker. Red or amber on black preserve night vision; black on white or black on amber read better in direct sun. |
+| **Display name** | The label above the number. |
+| **Path** / **Field** | SignalK path, and the key to read from a compound value (e.g. `roll` from `navigation.attitude`). |
+| **Factor** / **Offset** | Unit conversion from SignalK's SI units: `shown = raw * factor + offset`. |
+| **Unit** | Label after the number. |
+| **Layout** | Digit template, e.g. `xxx` or `xx.x` — sets the autosize and the decimal places. |
+| **Negative** | Reserves a column for the minus sign, so digits don't shift when the value goes negative. |
+| **Wrap to ±180°** | Folds the converted value into −180…180, for sources that send wind angle as 0…360. |
+
+**+ Add another number** puts a second or third value on the same screen.
+They split it into equal horizontal bands, top to bottom in the order
+listed, each with its own colours, all at the same digit size so the
+screen reads as one instrument. Where two neighbouring bands share a
+background a hairline divides them; where the background changes, the
+change of colour is the divide.
+
+Mixed backgrounds are worth using sparingly — they cost some of the dark
+adaptation the night themes exist to protect.
+
+**Preview** opens the config in a new tab before saving.
+
+## Configuration and permissions
+
+Configs live in signalk-server's built-in `applicationData` store, keyed
+by the display's name. Displays read it anonymously; saving requires a
+SignalK login, which the webapp prompts for and keeps in the browser's
+`localStorage`.
+
+A display holds no credentials, so if signalk-server's security is on it
+needs **Security → Settings → Allow Readonly Access** enabled, or nothing
+reaches the screen at all. The webapp checks this on load and warns if
+it's off, and a display that can't read its config says so rather than
+falling through to the "not configured" screen.
+
+An unconfigured display polls every 5s waiting for a config to appear; a
+running one re-checks its own config every 5s and reloads if it changed.
+Restarting a display to change what it shows is never necessary.
+
+## Reading the screen
+
+- A value with no update for 3 seconds drops to **grey dashes**. It never
+  holds a stale reading.
+- The **dot top-right** is green while the connection to SignalK is live,
+  dark red when it isn't. A dropped connection retries every second and
+  recovers on its own, showing the next live value rather than replaying
+  what was missed.
+- Digits never shift sideways: the layout reserves width for every digit
+  and for the minus sign.
 
 ## Latency and load
 
@@ -96,90 +254,13 @@ times a second. That stays cheap:
 - Past the refresh rate the browser coalesces writes into one paint, so a
   source faster than the panel costs parsing, not drawing.
 
-No framework, no bundler, no dependencies. Measured on a Pi Zero 2 W
-showing one live value: about 3% of the machine, load average 0.06, 216MB
-of 416MB used. If a Pi still can't keep up, cut values or slow the source
-— never buffer.
-
-## What's here
-
-- **`public/index.html`** — the webapp. Lists every configured display,
-  and adds, edits and deletes them.
-- **`public/instrument.html`** — the display itself. Fills the screen
-  with up to three numbers, autosized to fit.
-- **`docs/raspberry-pi-kiosk.md`** — how to build a display from a Pi.
-- **`dev/dummy_signalk.py`** — a fake SignalK server that sweeps values
-  through a range, for testing the display without a boat.
-
-## Install
-
-It's a SignalK webapp — static files, no plugin and no backend.
-
-In the server's admin UI, find `signalk-bignumbers` under *Appstore →
-Available*, install it and restart the server. It then appears in the
-Webapps menu.
-
-Or by hand:
-
-```bash
-cd ~/.signalk
-npm install signalk-bignumbers
-sudo systemctl restart signalk    # or however your server is run
-```
-
-For the development version, install from the repo instead:
-`npm install ghotihook/signalk-bignumbers`.
-
-## How a display gets configured
-
-1. A screen opens `instrument.html?display=<name>` — a Pi boots into it
-   with its hostname (see the [kiosk setup
-   guide](docs/raspberry-pi-kiosk.md)); a phone or laptop just bookmarks
-   the URL with a name you pick.
-2. With nothing stored under that name, the screen shows the name in
-   large text.
-3. In the webapp, add that name, choose an instrument and colours, and
-   save. **+ Add another number** puts a second or third value on the
-   same screen.
-4. The display picks it up within about 5 seconds. No restart, no SSH.
-
-Two or three values split the screen into equal horizontal bands, top to
-bottom in the order they're listed. Each band has its own colours, and all
-render at the same digit size so the screen reads as one instrument. Where
-two neighbouring bands share a background a hairline divides them; where
-the background changes, the change of colour is the divide.
-
-Configs live in signalk-server's built-in `applicationData` store, keyed
-by that name. Displays read it anonymously; saving requires a SignalK
-login, which the webapp prompts for.
-
-A display holds no credentials, so if signalk-server's security is on it
-needs **Security → Settings → Allow Readonly Access** enabled, or nothing
-reaches the screen. The webapp checks this on load and warns if it's off,
-and a display that can't read its config says so instead of showing the
-"not configured" screen.
-
-## Reading the screen
-
-The same principle from the other side: if a reading can't be trusted,
-the screen has to say so rather than keep showing it.
-
-If a value goes 3 seconds without an update it drops to grey dashes
-rather than holding its last reading, so a dead sensor or a dropped feed
-looks obviously dead instead of looking like a becalmed boat. The dot in
-the top-right corner is green while the connection to SignalK is live and
-dark red when it isn't; a dropped connection retries every second and
-recovers on its own, showing the next live value rather than replaying
-what was missed.
-
-Digits never shift sideways as the value changes — the layout reserves
-width for every digit and for the minus sign, so the number stays still
-enough to read from a moving boat.
+If a Pi still can't keep up, cut values or slow the source — never
+buffer.
 
 ## Direct URLs
 
-A display can also be configured entirely from its URL, with no stored
-config — useful for testing, or for a one-off screen:
+A display can be configured entirely from its URL, with no stored config
+and no login anywhere — useful for testing, or for a one-off screen:
 
 ```
 instrument.html?path=environment.wind.speedApparent&name=AWS&layout=xx.xx&unit=kt&factor=1.9438444924406
@@ -192,7 +273,7 @@ instrument.html?path=environment.wind.speedApparent&name=AWS&layout=xx.xx&unit=k
 | `field` | Key to read from a compound value, e.g. `roll` |
 | `layout` | Digit template, e.g. `xxx` or `xx.xx` — sets the autosize and decimal places |
 | `neg` | `true` to reserve room for a minus sign |
-| `wrap` | `true` to fold the converted value into −180…180, for sources that send wind angle as 0…360 |
+| `wrap` | `true` to fold the converted value into −180…180 |
 | `unit` | Label shown after the number |
 | `factor`, `offset` | Unit conversion: `shown = raw * factor + offset` |
 | `bg`, `fg` | Theme colours for this value's band; unsuffixed they also set the screen's. Hex only (`#000000`, `#fff`) — anything else is ignored |
@@ -219,6 +300,17 @@ screen's — the latter being what shows behind the "not configured" and
 error screens, which exist before there are any bands.
 
 The webapp's **Preview** button builds these URLs for you.
+
+## What's here
+
+- **`public/index.html`** — the webapp. Lists every configured display,
+  and adds, edits and deletes them.
+- **`public/instrument.html`** — the display itself. Fills the screen
+  with up to three numbers, autosized to fit.
+- **`docs/raspberry-pi-kiosk.md`** — how to build a display from a Pi.
+- **`dev/dummy_signalk.py`** — a fake SignalK server that sweeps values
+  through a range, for testing the display without a boat. It speaks only
+  the delta protocol, so it drives `?path=` URLs, not `?display=` ones.
 
 ## License
 

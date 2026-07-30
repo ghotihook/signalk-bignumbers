@@ -56,7 +56,7 @@ cog --platform=drm "http://signalk.local:3000/signalk-bignumbers/instrument.html
 
 The HDMI screen should show the Pi's hostname in large text:
 
-![The Pi's HDMI screen showing the hostname mast1 in large pale blue text on dark blue, above the line "Not configured yet — add this hostname in the SignalK Displays webapp"](images/display-unconfigured.jpg)
+<img src="images/display-unconfigured.jpg" alt="The Pi's screen showing the hostname mast1 in large pale blue text on dark blue, above the line: Not configured yet — add this hostname in the SignalK Displays webapp" width="520">
 
 That's a display saying "I have no config yet" — which is exactly right,
 and it means cog, the GPU and the network path to SignalK are all
@@ -83,12 +83,12 @@ hostname. Nothing is stored yet, so:
    pick the instrument, and **Save**. **Preview** opens the config in a
    new tab first if you want to eyeball it before saving.
 
-![The webapp's display list, with rows for mast1, mast2 and phone showing the instruments each is displaying](images/webapp-displays.png)
+![The webapp's display list, with rows for mast1 and phone showing the instruments each is displaying](images/webapp-displays.png)
 
 Within about 5 seconds the kiosk screen should switch from its hostname
 to the instrument:
 
-![The Pi's HDMI screen filled by the number 0.0, labelled STW and kt, black on pale blue](images/display-hdmi.jpg)
+<img src="images/display-mast.jpg" alt="A mast-mounted screen filled by the number 0.0, labelled STW and kt, black on white" width="520">
 
 If it does, you're done experimenting — `Ctrl+C` and make it permanent
 below.
