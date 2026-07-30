@@ -139,7 +139,7 @@ In outline:
 Because the name is the hostname, deploying one is: name the Pi, plug it
 in, read the name off its screen, add it in the webapp.
 
-<img src="docs/images/display-unconfigured.jpg" alt="A Pi's screen showing the hostname mast1 in large pale blue text on dark blue, above the line: Not configured yet — add this hostname in the SignalK Displays webapp" width="520">
+<img src="docs/images/display-unconfigured.jpg" alt="A Pi's screen showing the hostname mast1 in large pale blue text on dark blue, above a line saying it isn't configured yet and to add this hostname in the webapp" width="520">
 
 ### Anything else
 
@@ -181,7 +181,7 @@ npm install github:ghotihook/signalk-bignumbers#0.0.6
 
 `cd ~/.signalk` matters: signalk-server scans that directory's
 `node_modules` for webapps at startup, so anywhere else leaves it
-invisible. Either way, **SignalK Displays** appears in the Webapps menu
+invisible. Either way, **signalk-bignumbers** appears in the Webapps menu
 after the restart, served at
 `http://<your-server>:3000/signalk-bignumbers/`.
 

@@ -38,7 +38,7 @@ cog --platform=drm "http://signalk.local:3000/signalk-bignumbers/instrument.html
 
 The HDMI screen should show the Pi's hostname in large text:
 
-<img src="images/display-unconfigured.jpg" alt="The Pi's screen showing the hostname mast1 in large pale blue text on dark blue, above the line: Not configured yet — add this hostname in the SignalK Displays webapp" width="520">
+<img src="images/display-unconfigured.jpg" alt="The Pi's screen showing the hostname mast1 in large pale blue text on dark blue, above a line saying it isn't configured yet and to add this hostname in the webapp" width="520">
 
 That's a display saying "I have no config yet", which means cog, the GPU
 and the network path to SignalK are all working. It also tells you the
@@ -85,7 +85,7 @@ hostname, so this file is identical on every Pi:
 
 ```ini
 [Unit]
-Description=SignalK Big Numbers display
+Description=signalk-bignumbers display
 After=systemd-user-sessions.service getty@tty1.service network-online.target
 Wants=network-online.target
 Conflicts=getty@tty1.service
