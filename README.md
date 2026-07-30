@@ -57,14 +57,9 @@ touch.
 
 Five minutes, using a phone as the display.
 
-**1. Install the webapp** on the SignalK server — the only thing that
-gets installed anywhere:
-
-```bash
-cd ~/.signalk
-npm install github:ghotihook/signalk-bignumbers
-sudo systemctl restart signalk    # or however your server is run
-```
+**1. Install the webapp** — the only thing that gets installed anywhere.
+In SignalK's admin UI: *Appstore → Available*, find `signalk-bignumbers`,
+**Install**, then restart the server.
 
 **2. Open this on the phone.** Substitute your own server address for
 `signalk.local:3000` throughout — the same host and port you use to reach
@@ -164,9 +159,11 @@ mast Pi and a borrowed phone.
 
 ## Installing and updating
 
-It's a SignalK webapp — static files, no plugin and no backend. It isn't
-on the npm registry, so it isn't in SignalK's Appstore either; install it
-straight from GitHub, which gets the current `main`:
+It's a SignalK webapp — static files, no plugin and no backend. Normally
+you install and update it from the admin UI's **Appstore**, which
+restarts into the new version.
+
+To run the development version instead, install from GitHub:
 
 ```bash
 cd ~/.signalk
@@ -174,18 +171,18 @@ npm install github:ghotihook/signalk-bignumbers
 sudo systemctl restart signalk    # or however your server is run
 ```
 
-`github:owner/repo` tells npm to clone the repo rather than look the name
-up in the registry. Add `#<tag>` or `#<branch>` to pin a version instead
-of tracking `main`:
+`github:owner/repo` clones the repo rather than looking the name up in
+the npm registry, so this gets the current `main`. Add `#<tag>` or
+`#<branch>` to pin one:
 
 ```bash
 npm install github:ghotihook/signalk-bignumbers#0.0.5
 ```
 
-Updating is the same command again, plus a restart. `cd ~/.signalk`
-matters: signalk-server scans that directory's `node_modules` for webapps
-at startup, so anywhere else leaves it invisible. After the restart,
-**SignalK Displays** appears in the Webapps menu, served at
+`cd ~/.signalk` matters: signalk-server scans that directory's
+`node_modules` for webapps at startup, so anywhere else leaves it
+invisible. Either way, **SignalK Displays** appears in the Webapps menu
+after the restart, served at
 `http://<your-server>:3000/signalk-bignumbers/`.
 
 ## The webapp
