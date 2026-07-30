@@ -8,57 +8,48 @@ large enough to read from the rail.
 
 ## Why this exists
 
-A racing repeater has to do three things, and all three or none:
+A racing repeater has to do three things:
 
-- **Perform.** What's on the mast has to be what the instrument is
-  reading right now, at whatever rate the sensor produces it — someone is
-  trimming to it.
+- **Perform.** Show what the instrument is reading now, at whatever rate
+  the sensor produces it.
 - **Be readable.** At a glance, from metres away, at an angle, in spray,
-  in anything from full sun to full dark.
+  in full sun or full dark.
 - **Be trivial to deploy.** Minutes from a bare screen to a live number,
-  with nothing installed or configured on the display itself.
+  with nothing installed or configured on the display.
 
-How it meets them — and it does nothing else:
+How it meets them:
 
 **Fast.** A delta arrives and paints. No queue, no batch, no
-`requestAnimationFrame`, no animation to tween through, no rate limit: a
-10 Hz source updates the screen ten times a second. Nothing is smoothed,
-averaged or damped either — damping is latency wearing a different hat,
-and belongs upstream in SignalK where every display gets it. Given the
-choice between showing an update late and not showing it, it drops it.
-See [Latency and load](#latency-and-load).
+`requestAnimationFrame`, no animation, no rate limit — a 10 Hz source
+updates the screen ten times a second. Nothing is smoothed, averaged or
+damped; that belongs upstream in SignalK. A late update is dropped, not
+shown late. See [Latency and load](#latency-and-load).
 
-**Large, clear numbers.** One value fills the screen; three still fill a
-third each, all at the same digit size so the screen reads as one
-instrument. Fixed high-contrast themes, not a colour picker — nothing you
-can pick washes out in sun or wrecks night vision. A value that stops
-updating for 3 seconds drops to grey dashes, so a dead sensor looks dead
-rather than becalmed.
+**Large, clear numbers.** One value fills the screen; three fill a third
+each, all at the same digit size. Fixed high-contrast themes, not a
+colour picker. A value with no update for 3 seconds drops to grey dashes
+rather than holding a stale reading.
 
-**Digits that don't jump.** A number whose digits shift sideways as it
-changes can't be read from a moving boat: the eye re-finds the decimal
-point every update instead of taking the value in. So the layout is fixed
-before any value arrives — the digit template (`xx.x`) reserves a column
-per digit, figures are `tabular-nums`, leading zeros are hidden rather
-than removed so they keep their space, and a value that can go negative
-reserves its minus column whether or not it's using it. 9.9 to 10.0 and
-back moves nothing but the digits.
+**Digits that don't jump.** A number whose digits shift sideways can't be
+read from a moving boat, so the layout is fixed before any value arrives:
+the digit template (`xx.x`) reserves a column per digit, figures are
+`tabular-nums`, leading zeros are hidden rather than removed, and a value
+that can go negative reserves its minus column. 9.9 to 10.0 and back
+moves nothing but the digits.
 
-**No bloat.** Two static HTML pages. No build step, no bundler, no
-framework, no dependencies, no backend, no plugin. A Pi Zero 2 W runs a
-display with headroom to spare.
+**No bloat.** Two static HTML pages. No build step, bundler, framework,
+dependency, backend or plugin. A Pi Zero 2 W runs a display with headroom
+to spare.
 
 **Nothing to install or configure on the display.** Anything with a
-browser is a display the moment you open a URL on it: a phone, an old
-iPad, a laptop, a Pi with an HDMI panel. Deploying one is open the URL,
-read the name off the screen, add it in the webapp — and configuring it
-is picking an instrument from a dropdown. The display holds no config and
-no credentials of its own, so changing what it shows never means touching
-it again.
+browser is a display the moment you open a URL on it: phone, old iPad,
+laptop, Pi with an HDMI panel. Deploying one is open the URL, read the
+name off the screen, add it in the webapp; configuring it is picking an
+instrument from a dropdown. The display holds no config and no
+credentials, so changing what it shows never means touching it.
 
-It is deliberately **not an MFD**: no charts, no gauges, no graphs, no
-history, no AIS, no alarms, nothing to touch. Anything on screen that
-isn't a number, its label or its unit costs reading distance.
+Not an MFD: no charts, gauges, graphs, history, AIS, alarms, nothing to
+touch.
 
 <img src="docs/images/display-mast-three.jpg" alt="A mast-mounted screen showing three stacked bands: STW 0.0 kt black on white, SOG 0.0 kt white on black, AWS 6.4 kt cyan on black" width="520">
 
@@ -83,11 +74,9 @@ SignalK's admin UI.
 http://signalk.local:3000/signalk-bignumbers/instrument.html?display=phone
 ```
 
-The screen fills with the word `phone` and "Not configured yet": the
-display telling you its name and that nothing is stored under it. That's
-right so far, and it proves the network path to SignalK works. `phone` is
-just a label you chose in the URL — pick anything, then type the same
-word in the next step.
+The screen fills with `phone` and "Not configured yet" — its name, and
+nothing stored under it yet. `phone` is just a label you picked in the
+URL; use the same word in the next step.
 
 **3. Tell it what to show.** From any browser, open
 `http://signalk.local:3000/signalk-bignumbers/` (also in SignalK's
@@ -101,47 +90,42 @@ to the number. No reload, no restart.
 
 <img src="docs/images/display-phone.png" alt="A phone showing three stacked bands: STW 0.0 kt white on black, TWA 13 degrees black on white, TWS 16.2 kt white on black" width="260">
 
-That phone is now done. Changing what it shows is **Edit** in that list,
-and going from one value to three is **+ Add another number** — nothing
-on the phone changes either time.
+That phone is done. Changing what it shows is **Edit**; going from one
+value to three is **+ Add another number**. Nothing on the phone changes
+either time.
 
 ## Proper install
 
 The quick start is the whole software install. What's left is making a
 device stay on the air unattended.
 
-Both kinds of display work identically once running, and differ in one
-thing: **where the name comes from.** On a phone you type it into the
-URL; on a Pi, systemd fills in the hostname, so one service file works on
-every Pi in the fleet.
+The two differ in one thing: **where the name comes from.** On a phone
+you type it into the URL; on a Pi, systemd fills in the hostname, so one
+service file works on every Pi in the fleet.
 
 ### Phone or tablet
 
-Best for a repeater someone carries, or a screen taped up for a race and
-taken home after. An old iPad in a waterproof case makes a good mast
-display; a phone makes a good pit or bow repeater.
+For a repeater someone carries, or a screen up for one race. An old iPad
+in a waterproof case works on the mast.
 
 1. Open the display URL in Safari or Chrome, with a name you pick:
    `.../instrument.html?display=bow`
-2. **Add to Home Screen** — it launches fullscreen, with no address bar.
+2. **Add to Home Screen** — it launches fullscreen, no address bar.
 3. **Turn off auto-lock.** The page holds no wake-lock, so a screen
    timeout takes the display off the air. On iOS: *Settings → Display &
    Brightness → Auto-Lock → Never*.
-4. Keep it on power. A bright screen showing live data is not a light
-   load on a battery.
-5. Optional, to stop the crew navigating away from it: iOS *Guided
-   Access* (*Settings → Accessibility → Guided Access*), triple-click to
-   lock it to the page.
+4. Keep it on power. A bright screen on live data drains a battery fast.
+5. Optional: iOS *Guided Access* (*Settings → Accessibility → Guided
+   Access*) locks it to the page.
 
 Name it for where it goes — `bow`, `pit`, `helm` — not for the device.
-Swapping in a different phone is then one URL to open, with nothing to
-change in the webapp.
+Swapping in a different phone is then one URL to open.
 
 ### Raspberry Pi Zero 2 W (permanent mast display)
 
-Best for a screen that lives on the boat: it comes up by itself on power,
-has no battery to charge or lock screen to swipe past, and doesn't mind
-the rain. It's light enough to run on a Zero 2 W with plenty of headroom.
+For a screen that lives on the boat: it comes up on power, has no battery
+or lock screen, and doesn't mind the rain. A Zero 2 W runs one with
+plenty of headroom.
 
 Full walkthrough: **[docs/raspberry-pi-kiosk.md](docs/raspberry-pi-kiosk.md)**.
 In outline:
@@ -198,11 +182,11 @@ of tracking `main`:
 npm install github:ghotihook/signalk-bignumbers#0.0.5
 ```
 
-Updating is the same command again, followed by a restart. `cd
-~/.signalk` matters: signalk-server scans that directory's `node_modules`
-for webapps at startup, so installing anywhere else leaves it invisible.
-After the restart, **SignalK Displays** appears in the Webapps menu and
-the pages are served at `http://<your-server>:3000/signalk-bignumbers/`.
+Updating is the same command again, plus a restart. `cd ~/.signalk`
+matters: signalk-server scans that directory's `node_modules` for webapps
+at startup, so anywhere else leaves it invisible. After the restart,
+**SignalK Displays** appears in the Webapps menu, served at
+`http://<your-server>:3000/signalk-bignumbers/`.
 
 ## The webapp
 
@@ -229,11 +213,10 @@ Per value:
 
 **+ Add another number** puts a second or third value on the same screen.
 They split it into equal horizontal bands, top to bottom in the order
-listed, each with its own colours, all at the same digit size. Where two
-neighbouring bands share a background a hairline divides them; where the
-background changes, the colour change is the divide. Mixed backgrounds
-are worth using sparingly — they cost some of the dark adaptation the
-night themes exist to protect.
+listed, each with its own colours, all at the same digit size. Bands
+sharing a background are divided by a hairline; otherwise the colour
+change is the divide. Use mixed backgrounds sparingly — they cost some of
+the dark adaptation the night themes protect.
 
 **Preview** opens the config in a new tab before saving.
 
@@ -266,7 +249,7 @@ Restarting a display to change what it shows is never necessary.
 ## Latency and load
 
 **Late data is worse than no data.** A number two seconds old looks
-current, and nothing on screen says otherwise. Someone is trimming to it.
+current, and nothing on screen says otherwise.
 
 So as little as possible sits between the delta and the glass:
 
@@ -274,8 +257,8 @@ So as little as possible sits between the delta and the glass:
   Values arrive as they change, not on a timer.
 - Each delta renders synchronously on arrival. No queue, no
   `requestAnimationFrame`, no `setTimeout`, no batching.
-- Nothing animates. A tweened number shows readings the boat never took,
-  and shows them late; value changes carry `transition: none`.
+- Nothing animates — a tweened number shows readings the boat never took.
+  Value changes carry `transition: none`.
 - No smoothing, averaging or damping. Damping belongs upstream in
   SignalK, where every display gets it.
 - No history, replay or backfill. A reconnected display shows the next
@@ -284,9 +267,9 @@ So as little as possible sits between the delta and the glass:
 There's no rate limit either, so a 10 Hz source updates the screen ten
 times a second. That stays cheap:
 
-- A display receives only the paths it shows. The socket opens
+- A display receives only the paths it shows: the socket opens
   `?subscribe=none` and subscribes by path, so the rest of the bus is
-  never sent, however busy.
+  never sent.
 - Between deltas nothing paints. CPU follows the data rate, not the clock.
 - An update writes the sign and digits, nothing else. Digit widths are
   reserved, so a new value doesn't reflow or resize the text;
@@ -300,7 +283,7 @@ buffer.
 ## Direct URLs
 
 A display can be configured entirely from its URL, with no stored config
-and no login anywhere — useful for testing, or for a one-off screen:
+and no login — useful for testing, or a one-off screen:
 
 ```
 instrument.html?path=environment.wind.speedApparent&name=AWS&layout=xx.xx&unit=kt&factor=1.9438444924406
@@ -322,7 +305,7 @@ instrument.html?path=environment.wind.speedApparent&name=AWS&layout=xx.xx&unit=k
 
 For a second and third value, suffix every per-value key with `2` and `3`.
 The unsuffixed keys are the first value, so any single-value URL still
-means what it always did (wrapped here for readability — it's one line):
+means what it did (wrapped here for readability — it's one line):
 
 ```
 instrument.html?path=navigation.speedOverGround&name=SOG&layout=xx.x&unit=kt&factor=1.9438444924406
@@ -334,21 +317,21 @@ A missing `path2` ends the list, so values can't have gaps. `host` and
 `display` belong to the display as a whole and are never suffixed.
 
 `bg` and `fg` do double duty: suffixed (`bg2`, `fg3`) they colour just
-that band; unsuffixed they set both the first band's colours and the
-screen's, the latter being what shows behind the "not configured" and
-error screens, which exist before there are any bands.
+that band; unsuffixed they set the first band's colours *and* the
+screen's, which is what shows behind the "not configured" and error
+screens — those exist before there are any bands.
 
 The webapp's **Preview** button builds these URLs for you.
 
 ## What's here
 
-- **`public/index.html`** — the webapp. Lists every configured display,
-  and adds, edits and deletes them.
+- **`public/index.html`** — the webapp. Lists, adds, edits and deletes
+  displays.
 - **`public/instrument.html`** — the display itself. Fills the screen
   with up to three numbers, autosized to fit.
-- **`docs/raspberry-pi-kiosk.md`** — how to build a display from a Pi.
+- **`docs/raspberry-pi-kiosk.md`** — building a display from a Pi.
 - **`dev/dummy_signalk.py`** — a fake SignalK server that sweeps values
-  through a range, for testing without a boat. It speaks only the delta
+  through a range, for testing without a boat. Speaks only the delta
   protocol, so it drives `?path=` URLs, not `?display=` ones.
 
 ## License

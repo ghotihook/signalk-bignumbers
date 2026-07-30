@@ -131,24 +131,20 @@ systemctl show signalk-bignumbers -p ExecStart   # confirm %H expanded to the ho
 
 ## Managing displays
 
-The kiosk stays as dumb as possible: all it knows is its own hostname and
-where the SignalK server is. It asks for `?display=<hostname>` and takes
-whatever it's given, so everything about what it shows is managed in the
-webapp — see [the README](../README.md#the-webapp) for the fields.
-
-Two things follow that matter on a Pi:
+The kiosk knows only its hostname and where the SignalK server is. It
+asks for `?display=<hostname>` and takes whatever it's given, so what it
+shows is managed in the webapp — see [the
+README](../README.md#the-webapp) for the fields. Two consequences on a
+Pi:
 
 - **Its local config never changes again**, unless you point it at a
-  different SignalK server or rename the Pi. Going from one number to
-  three is a save in the webapp; the Pi still just asks for
-  `?display=<hostname>`. Restarting the service to change a display is
-  never necessary.
+  different server or rename the Pi. Going from one number to three is a
+  save in the webapp; restarting the service is never necessary.
 - **Renaming the Pi changes its identity.** It drops back to the
   unconfigured screen until you register the new name.
 
-Phones and tablets appear in the same list and work the same way, their
-name coming from the URL rather than from systemd, so a mixed fleet is
-managed from one page.
+Phones and tablets are in the same list, their name coming from the URL
+rather than systemd, so a mixed fleet is managed from one page.
 
 ---
 
@@ -157,19 +153,17 @@ managed from one page.
 ### Why cog
 
 [cog](https://github.com/Igalia/cog) is a minimal WPE WebKit browser
-shell built for embedded/kiosk use. Its DRM/KMS backend
-(`--platform=drm`) renders directly to the framebuffer via the GPU — no
-X11, no Wayland compositor, no window manager. That matters on a Zero
-2 W's 512MB RAM, and it keeps a compositor out of the path between the
-delta arriving and the number changing.
+shell for embedded/kiosk use. Its DRM/KMS backend (`--platform=drm`)
+renders directly to the framebuffer via the GPU — no X11, no Wayland
+compositor, no window manager. That matters on a Zero 2 W's 512MB, and it
+keeps a compositor out of the path between delta and glass.
 
-The tradeoff: it's WebKit, not Chromium, and the CLI/config surface is
-much smaller. Fine for a self-contained instrument page; worth
-reconsidering (cage + `chromium --kiosk`) if the page needed
-Chromium-only behavior.
+The tradeoff: WebKit, not Chromium, with a much smaller CLI/config
+surface. Fine for a self-contained instrument page; worth reconsidering
+(cage + `chromium --kiosk`) if the page needed Chromium-only behavior.
 
-The service runs as root, so no PAM/logind session setup is needed for
-DRM access.
+The service runs as root, so DRM access needs no PAM/logind session
+setup.
 
 ### Running cog by hand later
 
@@ -213,16 +207,15 @@ means software rendering — check `/dev/dri/renderD128` exists.
 
 ### The display identifier, and `%` in unit files
 
-`%H` works because systemd expands specifiers in `ExecStart` before
-running it. That same expansion is a trap if you ever put a
-full-parameter URL there instead of `?display=`: **any literal `%` must
-be doubled**. A URL-encoded `%3A` breaks unit parsing outright (`Failed
-to resolve unit specifiers`, and the unit won't load at all) unless
-written `%%3A`. The doubling applies only inside the unit file — not when
-running cog from a shell, which is why step 2's command needs no
-escaping. This bites harder on a multi-value URL, which repeats every
-per-value parameter two or three times: one missed `%` in any of them and
-the unit silently won't load. `?display=` avoids the whole problem.
+`%H` works because systemd expands specifiers in `ExecStart`. That same
+expansion is a trap if you put a full-parameter URL there instead of
+`?display=`: **any literal `%` must be doubled**. A URL-encoded `%3A`
+breaks unit parsing outright (`Failed to resolve unit specifiers`, and
+the unit won't load at all) unless written `%%3A`. The doubling applies
+only inside the unit file, not when running cog from a shell — which is
+why step 2 needs no escaping. It bites hardest on a multi-value URL,
+which repeats every per-value parameter two or three times: one missed
+`%` and the unit silently won't load. `?display=` avoids it entirely.
 
 Related: **non-ASCII characters can be mangled** if typed on an SSH
 session that isn't in a UTF-8 locale, and cog then rejects the URL as
