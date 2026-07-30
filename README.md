@@ -176,7 +176,7 @@ the npm registry, so this gets the current `main`. Add `#<tag>` or
 `#<branch>` to pin one:
 
 ```bash
-npm install github:ghotihook/signalk-bignumbers#0.0.6
+npm install github:ghotihook/signalk-bignumbers#0.0.7
 ```
 
 `cd ~/.signalk` matters: signalk-server scans that directory's
