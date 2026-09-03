@@ -192,21 +192,32 @@ the display picks it up within about 5 seconds; **Delete** sends it back
 to showing its own name, ready to be reassigned. A display's name is
 fixed once created.
 
-<img src="docs/images/webapp-edit.png" alt="The display editor: dropdowns for Instrument and Colours, a Display name field, and an expanded Advanced section with Path, Field, Factor, Offset, Unit, Layout and Negative" width="460">
+<img src="docs/images/webapp-edit.png" alt="The display editor: dropdowns for Path and Presentation, a Display name field and a Colours dropdown" width="460">
 
 Per value:
 
 | Field | Meaning |
 |---|---|
-| **Instrument** | A preset — AWS, TWA, SOG, STW, HDG, Depth, Heel, BATT and others. Fills in everything below. |
-| **Colours** | Fixed high-contrast pairs. Red or amber on black preserve night vision; black on white or black on amber read better in direct sun. |
+| **Path** | What to show, picked from the paths this server is currently reporting. A compound value appears once per key (`navigation.attitude → roll`). A path the server has stopped reporting stays selected on a saved display, marked *not currently reporting*. |
+| **Presentation** | How to show it: the conversion from SignalK's SI units, the unit label, the digit layout and the sign handling, in one pick. Grouped by kind — Angle, Speed, Depth, Distance, Temperature, Time, Electrical, Other, Number. |
 | **Display name** | The label above the number. |
-| **Path** / **Field** | SignalK path, and the key to read from a compound value (e.g. `roll` from `navigation.attitude`). |
-| **Factor** / **Offset** | Unit conversion from SignalK's SI units: `shown = raw * factor + offset`. |
-| **Unit** | Label after the number. |
-| **Layout** | Digit template, e.g. `xxx` or `xx.x` — sets the autosize and the decimal places. |
-| **Negative** | Reserves a column for the minus sign, so digits don't shift when the value goes negative. |
-| **Wrap to ±180°** | Folds the converted value into −180…180, for sources that send wind angle as 0…360. |
+| **Colours** | Fixed high-contrast pairs. Red or amber on black preserve night vision; black on white or black on amber read better in direct sun. |
+
+The presentations are listed in [`public/formats.js`](public/formats.js),
+which the editor and the display both read, so the two can't disagree
+about what one means. A few of them:
+
+| Presentation | Shows |
+|---|---|
+| ±180° — wind angle | `-143°`, folded back from 0…360 if the source sends it that way |
+| 0–360° — heading, course, direction | `047°` |
+| Knots — xx.x | `8.4 kt` from SignalK's m/s |
+| Celsius | `18.3 °C` from SignalK's Kelvin |
+| Duration — HH:MM:SS | `01:02:05` from a count of seconds, e.g. time to go |
+| Clock — HH:MM:SS (local) | `14:05:09` from a timestamp |
+
+To show something no presentation covers, write the conversion keys into
+the URL directly — see [Direct URLs](#direct-urls).
 
 **+ Add another number** puts a second or third value on the same screen.
 They split it into equal horizontal bands, top to bottom in the order
@@ -283,13 +294,14 @@ A display can be configured entirely from its URL, with no stored config
 and no login — useful for testing, or a one-off screen:
 
 ```
-instrument.html?path=environment.wind.speedApparent&name=AWS&layout=xx.xx&unit=kt&factor=1.9438444924406
+instrument.html?path=environment.wind.speedApparent&name=AWS&format=speed-kn
 ```
 
 | Parameter | Meaning |
 |---|---|
 | `path` | SignalK path to subscribe to (required) |
 | `name` | Label shown top-left of the band (required) |
+| `format` | A presentation from [`public/formats.js`](public/formats.js) — `speed-kn`, `angle-180`, `temp-c`, `dur-hms` and so on. Stands in for the six keys below |
 | `field` | Key to read from a compound value, e.g. `roll` |
 | `layout` | Digit template, e.g. `xxx` or `xx.xx` — sets the autosize and decimal places |
 | `neg` | `true` to reserve room for a minus sign |
@@ -305,13 +317,19 @@ The unsuffixed keys are the first value, so any single-value URL still
 means what it did (wrapped here for readability — it's one line):
 
 ```
-instrument.html?path=navigation.speedOverGround&name=SOG&layout=xx.x&unit=kt&factor=1.9438444924406
-               &path2=environment.depth.belowTransducer&name2=DPT&layout2=xx.x&unit2=m
-               &path3=navigation.attitude&field3=roll&name3=Heel&layout3=xx&neg3=true&unit3=%C2%B0&factor3=57.29577951308232
+instrument.html?path=navigation.speedOverGround&name=SOG&format=speed-kn
+               &path2=environment.depth.belowTransducer&name2=DPT&format2=depth-m
+               &path3=navigation.attitude&field3=roll&name3=Heel&format3=angle-small
 ```
 
 A missing `path2` ends the list, so values can't have gaps. `host` and
 `display` belong to the display as a whole and are never suffixed.
+
+`format` is shorthand, not a replacement: `layout`, `neg`, `wrap`, `unit`,
+`factor` and `offset` still work on their own, and given alongside a
+`format` they override it. So every URL written before presentations
+existed still means exactly what it meant then, and anything the list
+doesn't cover can still be spelled out key by key.
 
 `bg` and `fg` do double duty: suffixed (`bg2`, `fg3`) they colour just
 that band; unsuffixed they set the first band's colours *and* the

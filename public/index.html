@@ -190,11 +190,6 @@
     font-size: 0.8rem;
     color: #777;
   }
-  .grid2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-  }
   .slot {
     background: #191919;
     border: 1px solid #333;
@@ -213,12 +208,6 @@
     color: #999;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-  }
-  details summary {
-    cursor: pointer;
-    color: #aaa;
-    font-size: 0.85rem;
-    margin-bottom: 0.75rem;
   }
   .hint {
     font-size: 0.78rem;
@@ -248,7 +237,7 @@
 </head>
 <body>
 <main>
-  <h1>signalk-bignumbers <span class="version">v0.0.7</span></h1>
+  <h1>signalk-bignumbers <span class="version">v0.0.8</span></h1>
 
   <div class="authbar">
     <span id="authState">Not logged in</span>
@@ -345,77 +334,29 @@
     </div>
     <div class="stack">
       <label>
-        Instrument
-        <select data-f="preset"></select>
+        Path
+        <select data-f="path"></select>
       </label>
       <label>
-        Colours
-        <select data-f="theme"></select>
+        Presentation
+        <select data-f="format"></select>
       </label>
       <label>
         Display name
         <input data-f="name" placeholder="shown above the number">
       </label>
-      <details>
-        <summary>Advanced (path / conversion / format)</summary>
-        <div class="grid2">
-          <label>Path <input data-f="path"></label>
-          <label>Field <input data-f="field" placeholder="(none)"></label>
-          <label>Factor <input data-f="factor" type="number" step="any"></label>
-          <label>Offset <input data-f="offset" type="number" step="any"></label>
-          <label>Unit <input data-f="unit"></label>
-          <label>Layout <input data-f="layout" placeholder="xx.xx"></label>
-          <label>
-            Negative
-            <select data-f="neg">
-              <option value="false">No</option>
-              <option value="true">Yes</option>
-            </select>
-          </label>
-          <label>
-            Wrap to ±180°
-            <select data-f="wrap">
-              <option value="false">No</option>
-              <option value="true">Yes</option>
-            </select>
-          </label>
-        </div>
-      </details>
+      <label>
+        Colours
+        <select data-f="theme"></select>
+      </label>
     </div>
   </div>
 </template>
 
+<!-- The presentation table, shared with instrument.html so the two can
+     never disagree about what a format means. -->
+<script src="formats.js"></script>
 <script>
-  // Standard SignalK paths with recommended conversion + display format.
-  // factor/offset convert SignalK's SI-unit value into the shown unit:
-  // scaled = raw * factor + offset
-  const PRESETS = [
-    { name: "AWS", path: "environment.wind.speedApparent", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.x", neg: false },
-    { name: "TWS", path: "environment.wind.speedTrue", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.x", neg: false },
-    { name: "AWA", path: "environment.wind.angleApparent", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: true, wrap: true },
-    { name: "TWA", path: "environment.wind.angleTrueWater", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: true, wrap: true },
-    { name: "TWD", path: "environment.wind.directionTrue", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
-    { name: "SOG", path: "navigation.speedOverGround", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.x", neg: false },
-    { name: "STW", path: "navigation.speedThroughWater", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.x", neg: false },
-    { name: "STW", path: "navigation.speedThroughWaterCorrected", factor: 1.9438444924406, offset: 0, unit: "kt", layout: "xx.x", neg: false },
-    { name: "COG", path: "navigation.courseOverGroundTrue", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
-    { name: "HDG", path: "navigation.headingTrue", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
-    { name: "HDG", path: "navigation.headingMagnetic", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
-    { name: "Heel", path: "navigation.attitude", field: "roll", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
-    { name: "Trim", path: "navigation.attitude", field: "pitch", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
-    { name: "Yaw", path: "navigation.attitude", field: "yaw", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xxx", neg: false },
-    { name: "Rudder", path: "steering.rudderAngle", factor: 57.29577951308232, offset: 0, unit: "°", layout: "xx", neg: true },
-    { name: "Depth", path: "environment.depth.belowTransducer", factor: 1, offset: 0, unit: "m", layout: "xx.x", neg: false },
-    { name: "DBK", path: "environment.depth.belowKeel", factor: 1, offset: 0, unit: "m", layout: "xx.x", neg: false },
-    { name: "DBS", path: "environment.depth.belowSurface", factor: 1, offset: 0, unit: "m", layout: "xx.x", neg: false },
-    { name: "SEA", path: "environment.water.temperature", factor: 1, offset: -273.15, unit: "°C", layout: "xx.x", neg: true },
-    { name: "AIR", path: "environment.outside.temperature", factor: 1, offset: -273.15, unit: "°C", layout: "xx.x", neg: true },
-    { name: "TRIP", path: "navigation.trip.log", factor: 0.0005399568034557235, offset: 0, unit: "nm", layout: "xxx.x", neg: false },
-    { name: "LOG", path: "navigation.log", factor: 0.0005399568034557235, offset: 0, unit: "nm", layout: "xxxxx.x", neg: false },
-    { name: "SATS", path: "navigation.gnss.satellites", factor: 1, offset: 0, unit: "", layout: "xx", neg: false },
-    { name: "BATT", path: "electrical.batteries.0.voltage", factor: 1, offset: 0, unit: "V", layout: "xx.x", neg: false },
-  ];
-
   // Fixed high-contrast pairs rather than free colour pickers -- these are
   // the combinations that stay readable on a screen in a cockpit. The
   // display only ever receives two colours (bg/fg) and derives the muted
@@ -673,9 +614,137 @@
 
     slotsEl.textContent = "";
     slots = [];
-    // A brand new display starts with one slot on the default preset.
+    // A brand new display starts with one empty slot to fill in.
     (cfg ? itemsOf(cfg).slice(0, MAX_ITEMS) : [null]).forEach((item) => addSlot(item));
     updateKioskUrl();
+  }
+
+  // --- available paths --------------------------------------------------
+  // The path dropdown lists what this boat is actually producing, read from
+  // the server's full model. Fetched once and shared by all three slots.
+  // Same origin as every other request here -- there is no ?host= on this
+  // page, deliberately.
+  //
+  // Sent with the login token when there is one, so the editor still works
+  // on a server with anonymous reads off. Displays would still fail there,
+  // which is what the anonNotice banner is for.
+  let pathsPromise = null;
+
+  function availablePaths() {
+    if (!pathsPromise) pathsPromise = loadPaths().catch(() => []);
+    return pathsPromise;
+  }
+
+  async function loadPaths() {
+    const res = await fetch(`${ORIGIN}/signalk/v1/api/vessels/self`, {
+      headers: token() ? { "Authorization": `Bearer ${token()}` } : {},
+    });
+    if (!res.ok) return [];
+    const found = [];
+    flattenPaths(await res.json(), "", found);
+    return found.sort((a, b) =>
+      a.path.localeCompare(b.path) || (a.field || "").localeCompare(b.field || ""));
+  }
+
+  // A leaf in SignalK's full model is any node carrying a `value`. An object
+  // value (attitude, position) becomes one entry per numeric key -- the same
+  // path/field pair a display cell subscribes with.
+  function flattenPaths(node, prefix, out) {
+    if (!node || typeof node !== "object") return;
+    if ("value" in node) {
+      const v = node.value;
+      if (v && typeof v === "object" && !Array.isArray(v)) {
+        for (const key of Object.keys(v)) {
+          if (typeof v[key] === "number") out.push({ path: prefix, field: key });
+        }
+      } else {
+        out.push({ path: prefix });
+      }
+      return;
+    }
+    // `values` holds one path split by source, and meta/$source/timestamp
+    // are a leaf's own metadata -- none of them are paths in their own right.
+    for (const key of Object.keys(node)) {
+      if (key === "values" || key === "meta" || key === "$source" || key === "timestamp") continue;
+      flattenPaths(node[key], prefix ? `${prefix}.${key}` : key, out);
+    }
+  }
+
+  // A path and its field as one dropdown value. SignalK paths are
+  // dot-separated identifiers, so a "|" can never appear inside one.
+  const FIELD_SEP = "|";
+
+  function pathKey(item) {
+    return item.path ? item.path + (item.field ? FIELD_SEP + item.field : "") : "";
+  }
+
+  function pathLabel(item) {
+    return item.path + (item.field ? ` → ${item.field}` : "");
+  }
+
+  // Options arrive after the fetch, so the select is briefly empty. A saved
+  // path that isn't currently reporting is added back at the top: editing a
+  // display ashore, with the instruments off, must never silently drop the
+  // path it was already set to.
+  async function fillPathSelect(select, item) {
+    const saved = pathKey(item);
+    const paths = await availablePaths();
+    select.appendChild(new Option("— choose —", ""));
+    if (saved && !paths.some((p) => pathKey(p) === saved)) {
+      select.appendChild(new Option(`${pathLabel(item)} (not currently reporting)`, saved));
+    }
+    const groups = new Map();
+    for (const p of paths) {
+      const branch = p.path.split(".")[0];
+      if (!groups.has(branch)) {
+        const group = document.createElement("optgroup");
+        group.label = branch;
+        groups.set(branch, group);
+        select.appendChild(group);
+      }
+      groups.get(branch).appendChild(new Option(pathLabel(p), pathKey(p)));
+    }
+    select.value = saved;
+    if (!paths.length) {
+      setStatus("editorStatus",
+        "No paths — this server isn't reporting any data yet. Turn the instruments on and reload.",
+        "error");
+    }
+  }
+
+  // The presentation carries everything about turning the value into what
+  // the screen shows: conversion, unit, digit layout and sign handling.
+  function fillFormatSelect(select, item) {
+    select.appendChild(new Option("— choose —", ""));
+    const groups = new Map();
+    for (const f of FORMATS) {
+      if (!groups.has(f.group)) {
+        const group = document.createElement("optgroup");
+        group.label = f.group;
+        groups.set(f.group, group);
+        select.appendChild(group);
+      }
+      groups.get(f.group).appendChild(new Option(f.name, f.id));
+    }
+    select.value = item.format || matchFormat(item);
+  }
+
+  // A config saved before presentations existed carries the raw conversion
+  // keys instead of a slug. Every one of the presets they were built from is
+  // an entry in FORMATS, so matching on those keys recognises it, and saving
+  // rewrites it as a slug. An unrecognised one leaves "— choose —" showing,
+  // which the save check then insists on.
+  function matchFormat(item) {
+    // mode is in here so the time presentations can never be matched: a
+    // stored item has no mode, and the two HH:MM:SS entries are otherwise
+    // indistinguishable from each other.
+    const signature = (o) => [
+      o.factor === undefined ? 1 : Number(o.factor),
+      o.offset === undefined ? 0 : Number(o.offset),
+      o.unit || "", o.layout || "", !!o.neg, !!o.wrap, o.mode || "number",
+    ].join("~");
+    const hit = item.path && FORMATS.find((f) => signature(f) === signature(item));
+    return hit ? hit.id : "";
   }
 
   // --- value slots ------------------------------------------------------
@@ -688,18 +757,16 @@
     // Fields live inside this slot, so look them up from its own root
     // rather than by a document-wide id.
     const slot = { root, f: (key) => root.querySelector(`[data-f="${key}"]`) };
+    const item = cfg || {};
 
-    const presetSelect = slot.f("preset");
-    presetSelect.appendChild(new Option("— custom —", "custom"));
-    PRESETS.forEach((p, i) => {
-      presetSelect.appendChild(new Option(p.field ? `${p.path} -> ${p.field}` : p.path, i));
-    });
-    presetSelect.addEventListener("change", () => {
-      if (presetSelect.value !== "custom") applyConfig(slot, PRESETS[presetSelect.value]);
-    });
+    fillPathSelect(slot.f("path"), item);
+    fillFormatSelect(slot.f("format"), item);
+    slot.f("name").value = item.name || "";
 
     const themeSelect = slot.f("theme");
     THEMES.forEach((t, i) => themeSelect.appendChild(new Option(t.name, i)));
+    const theme = THEMES.findIndex((t) => t.bg === item.bg && t.fg === item.fg);
+    themeSelect.value = String(theme >= 0 ? theme : 0);
 
     slot.f("remove").addEventListener("click", () => {
       root.remove();
@@ -709,15 +776,6 @@
 
     slotsEl.appendChild(root);
     slots.push(slot);
-
-    const item = cfg || PRESETS[0];
-    applyConfig(slot, item);
-    const match = PRESETS.findIndex((p) => p.path === item.path && (p.field || "") === (item.field || ""));
-    presetSelect.value = match >= 0 ? String(match) : "custom";
-    // Set here rather than in applyConfig, which the preset dropdown also
-    // calls -- picking a different instrument shouldn't reset the colours.
-    const theme = THEMES.findIndex((t) => t.bg === item.bg && t.fg === item.fg);
-    themeSelect.value = String(theme >= 0 ? theme : 0);
     renumberSlots();
   }
 
@@ -731,33 +789,21 @@
     el("addSlotBtn").hidden = slots.length >= MAX_ITEMS;
   }
 
-  function applyConfig(slot, c) {
-    slot.f("name").value = c.name || "";
-    slot.f("path").value = c.path || "";
-    slot.f("field").value = c.field || "";
-    slot.f("factor").value = c.factor !== undefined ? c.factor : 1;
-    slot.f("offset").value = c.offset !== undefined ? c.offset : 0;
-    slot.f("unit").value = c.unit || "";
-    slot.f("layout").value = c.layout || "x";
-    slot.f("neg").value = String(!!c.neg);
-    slot.f("wrap").value = String(!!c.wrap);
-  }
-
   // One value in the shape instrument.html reads, whether from this store
-  // or from URL params: path/name/layout/neg and the colours always, the
-  // rest only when meaningful.
+  // or from URL params: which path, how to present it, what to call it and
+  // what colour. The format slug stands in for the conversion, unit, digit
+  // layout and sign handling, which instrument.html resolves through the
+  // same formats.js this page built its dropdown from.
   function slotConfig(slot) {
-    const v = (key) => slot.f(key).value.trim();
+    const [path, field] = slot.f("path").value.split(FIELD_SEP);
     const theme = THEMES[slot.f("theme").value] || THEMES[0];
     const item = {
-      path: v("path"), name: v("name"), layout: v("layout") || "x", neg: v("neg") === "true",
+      path: path || "",
+      name: slot.f("name").value.trim(),
+      format: slot.f("format").value,
       bg: theme.bg, fg: theme.fg,
     };
-    if (v("wrap") === "true") item.wrap = true;
-    if (v("field")) item.field = v("field");
-    if (v("unit")) item.unit = v("unit");
-    if (v("factor") && v("factor") !== "1") item.factor = parseFloat(v("factor"));
-    if (v("offset") && v("offset") !== "0") item.offset = parseFloat(v("offset"));
+    if (field) item.field = field;
     return item;
   }
 
@@ -782,8 +828,8 @@
     const code = el("code").value.trim();
     if (!code) { setStatus("editorStatus", "Enter the display code first.", "error"); return; }
     if (!token()) { setStatus("editorStatus", "Log in first (top of page).", "error"); return; }
-    if (currentConfig().items.some((item) => !item.path || !item.name)) {
-      setStatus("editorStatus", "Every value needs a path and a name.", "error");
+    if (currentConfig().items.some((item) => !item.path || !item.format || !item.name)) {
+      setStatus("editorStatus", "Every value needs a path, a presentation and a name.", "error");
       return;
     }
 

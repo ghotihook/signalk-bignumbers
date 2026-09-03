@@ -173,16 +173,23 @@
        destroyed and their references stay valid for the life of the page. -->
   <div id="message" hidden></div>
 
+<!-- The presentation table, shared with the webapp's editor. Plain script
+     tag, no build step: it defines FORMAT_BY_ID, which makeItem() reads. -->
+<script src="formats.js"></script>
 <script>
   // --- Instrument configuration ---
   // A display shows one, two or three values, stacked in equal bands.
   // Config is either read entirely from the URL query string:
+  //   ?path=environment.wind.speedApparent&name=AWS&format=speed-kn
+  //   ?path=navigation.attitude&field=roll&name=Heel&format=angle-small
+  //   ?path=environment.water.temperature&name=SEA&format=temp-c
+  // ...where format= names an entry in formats.js, which supplies the
+  // conversion, unit, digit layout and sign handling in one. The keys it
+  // stands for can still be given individually, and override it:
   //   ?path=environment.wind.speedApparent&name=AWS&layout=xx.xx&unit=kt&factor=1.9438444924406
-  //   ?path=navigation.attitude&field=roll&name=Heel&layout=xx&neg=true&unit=%C2%B0&factor=57.29577951308232
-  //   ?path=environment.water.temperature&name=SEA&layout=xx.x&unit=%C2%B0C&factor=1&offset=-273.15
   // ...with a second and third value's keys suffixed 2 and 3, so every
   // single-value URL that ever worked still means the same thing:
-  //   ?path=navigation.speedOverGround&name=SOG&layout=xx.x&unit=kt&path2=environment.depth.belowTransducer&name2=DPT&layout2=xx.x&unit2=m
+  //   ?path=navigation.speedOverGround&name=SOG&format=speed-kn&path2=environment.depth.belowTransducer&name2=DPT&format2=depth-m
   // ...or, for a "dumb" display that never needs its own config touched,
   // just an identifier -- usually the Pi's hostname, via systemd's %H --
   // and the real config is fetched from SignalK itself:
@@ -195,7 +202,7 @@
   // the 2/3 suffix for the second and third value) in the query string.
   // bg/fg are here as well as at display level: unsuffixed they mean both
   // the page's colours and the first value's, which are the same thing.
-  const ITEM_KEYS = ["path", "field", "name", "factor", "offset", "unit", "layout", "neg", "wrap", "bg", "fg"];
+  const ITEM_KEYS = ["path", "field", "name", "format", "factor", "offset", "unit", "layout", "neg", "wrap", "bg", "fg"];
 
   function num(v, fallback) {
     const n = parseFloat(v);
@@ -215,19 +222,33 @@
   // Normalises one raw value config into the shape the rest of the page
   // uses. Raw values arrive either as query-string strings or as whatever
   // JSON types the store holds, so everything here is coerced, not trusted.
+  //
+  // A `format` names a presentation in formats.js, which stands in for
+  // factor/offset/unit/layout/neg/wrap. Any of those given explicitly wins
+  // over it -- that ordering is what keeps every config and URL written
+  // before formats existed meaning exactly what it meant then. An unknown
+  // format resolves to nothing and changes no key, rather than erroring.
   function makeItem(raw) {
-    const [intPart, decPart] = String(raw.layout || "x").split(".");
+    const spec = FORMAT_BY_ID[raw.format] || {};
+    const pick = (key) =>
+      raw[key] === undefined || raw[key] === null || raw[key] === "" ? spec[key] : raw[key];
+    const layout = String(pick("layout") || "x");
+    const [intPart, decPart] = layout.split(".");
     return {
       path: raw.path || null,       // SignalK path to subscribe to
       field: raw.field || null,     // key to pull out of a compound object value
       name: raw.name || null,       // short label above the number
-      factor: num(raw.factor, 1),   // unit conversion multiplier
-      offset: num(raw.offset, 0),   // unit conversion offset (e.g. Kelvin -> Celsius)
-      unit: raw.unit || "",         // unit label after the number
-      expectNegative: raw.neg === true || raw.neg === "true", // reserve a sign column?
-      wrapAngle: raw.wrap === true || raw.wrap === "true",    // fold 0..360 back to -180..180?
+      factor: num(pick("factor"), 1),   // unit conversion multiplier
+      offset: num(pick("offset"), 0),   // unit conversion offset (e.g. Kelvin -> Celsius)
+      unit: pick("unit") || "",         // unit label after the number
+      expectNegative: pick("neg") === true || pick("neg") === "true", // reserve a sign column?
+      wrapAngle: pick("wrap") === true || pick("wrap") === "true",    // fold 0..360 back to -180..180?
+      // Only a known format can reach a time rendering -- there's no raw
+      // key for it, so a hand-written config can't ask for one by accident.
+      mode: spec.mode || "number",  // "number", "duration" (seconds) or "clock" (a timestamp)
       bg: colour(raw.bg),           // this band's background, else the display's
       fg: colour(raw.fg),           // this band's foreground, else the display's
+      layout,                       // the digit mask itself, for the placeholder
       intDigits: intPart.length,    // "xx.x" -> 2 integer digits, 1 decimal
       decimals: decPart ? decPart.length : 0,
     };
@@ -337,8 +358,10 @@
         cfg, el, rowEl, signEl, valueEl,
         staleTimer: null,
         placeholderSign: cfg.expectNegative ? " " : "",
-        placeholderValue: "-".repeat(cfg.intDigits) +
-          (cfg.decimals > 0 ? "." + "-".repeat(cfg.decimals) : ""),
+        // Every digit of the mask becomes a dash, its separators kept:
+        // "xx.x" -> "--.-", "hh:mm:ss" -> "--:--:--". Same width as a
+        // reading, so nothing moves when the feed comes back.
+        placeholderValue: cfg.layout.replace(/[^.:]/g, "-"),
       };
     });
 
@@ -461,10 +484,10 @@
   function fitDisplay() {
     const saved = cells.map((c) => ({ html: c.valueEl.innerHTML, sign: c.signEl.textContent }));
     for (const c of cells) {
-      const intSample = "8".repeat(c.cfg.intDigits);
-      c.valueEl.textContent = c.cfg.decimals > 0
-        ? `${intSample}.${"8".repeat(c.cfg.decimals)}`
-        : intSample;
+      // The mask with every digit as an 8, separators kept: "xx.x" -> "88.8",
+      // "hh:mm:ss" -> "88:88:88". A colon is narrower than a digit, so a time
+      // measured as eight digits would come out undersized.
+      c.valueEl.textContent = c.cfg.layout.replace(/[^.:]/g, "8");
       c.signEl.textContent = c.cfg.expectNegative ? "-" : "";
       c.rowEl.style.fontSize = "10rem";
     }
@@ -505,7 +528,38 @@
     document.fonts.ready.then(fitDisplay);
     window.addEventListener("resize", () => requestAnimationFrame(fitDisplay));
 
+    // A count of seconds as HH:MM:SS, MM:SS or HH:MM, per the mask. The
+    // leading field is clamped to two digits rather than being allowed to
+    // grow a third: a number that changes width can't be read from a moving
+    // boat, and nothing racing needs to distinguish 100 hours from 200.
+    function formatDuration(cfg, seconds) {
+      const total = Math.floor(Math.abs(seconds));
+      const fields = cfg.layout === "mm:ss"
+        ? [Math.floor(total / 60), total % 60]
+        : cfg.layout === "hh:mm"
+          ? [Math.floor(total / 3600), Math.floor(total / 60) % 60]
+          : [Math.floor(total / 3600), Math.floor(total / 60) % 60, total % 60];
+      fields[0] = Math.min(fields[0], 99);
+      const sign = !cfg.expectNegative ? "" : (seconds < 0 && total > 0 ? "-" : " ");
+      return { sign, text: fields.map((n) => String(n).padStart(2, "0")).join(":") };
+    }
+
+    // A timestamp in the display's own local time -- SignalK sends
+    // navigation.datetime as an RFC3339 string, and a number is read as
+    // epoch seconds. Returns null for anything unreadable, which leaves the
+    // band to go stale rather than showing a wrong time.
+    function formatClock(cfg, v) {
+      const d = new Date(typeof v === "number" ? v * 1000 : v);
+      if (Number.isNaN(d.getTime())) return null;
+      const two = (n) => String(n).padStart(2, "0");
+      const text = `${two(d.getHours())}:${two(d.getMinutes())}` +
+        (cfg.layout === "hh:mm" ? "" : `:${two(d.getSeconds())}`);
+      return { sign: cfg.expectNegative ? " " : "", text };
+    }
+
     function formatValue(cfg, v) {
+      if (cfg.mode === "clock") return formatClock(cfg, v);
+      if (cfg.mode === "duration") return formatDuration(cfg, v * cfg.factor + cfg.offset);
       let scaled = v * cfg.factor + cfg.offset;
       // Wind angles are meant to arrive signed, but plenty of sources send
       // 0..2*PI instead, which scales to 0..360 and reads as gibberish on a
@@ -540,9 +594,12 @@
     }
 
     function updateValue(c, v) {
-      const { sign, intPart, decPart } = formatValue(c.cfg, v);
-      c.signEl.textContent = sign;
-      c.valueEl.innerHTML = digitsHtml(intPart, decPart);
+      const out = formatValue(c.cfg, v);
+      if (!out) return; // unreadable: not a reading, so let the band go stale
+      c.signEl.textContent = out.sign;
+      // A time mask is fixed-width already, and has no leading zeros to ghost.
+      if (out.text !== undefined) c.valueEl.textContent = out.text;
+      else c.valueEl.innerHTML = digitsHtml(out.intPart, out.decPart);
       c.signEl.classList.remove("stale");
       c.valueEl.classList.remove("stale");
       clearTimeout(c.staleTimer);
@@ -583,7 +640,11 @@
               // v.value can be null when a source drops out, so don't index
               // into it blindly -- that would throw and kill this handler.
               const raw = c.cfg.field ? v.value && v.value[c.cfg.field] : v.value;
-              if (typeof raw === "number") updateValue(c, raw);
+              // Numbers, plus strings for a clock band -- SignalK sends
+              // navigation.datetime as RFC3339 text. Nothing else gets in.
+              if (typeof raw === "number" || (c.cfg.mode === "clock" && typeof raw === "string")) {
+                updateValue(c, raw);
+              }
             }
           }
         }

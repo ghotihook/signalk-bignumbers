@@ -102,10 +102,64 @@ The identifier is the display Pi's hostname, supplied by systemd's `%H`
 specifier. See `docs/raspberry-pi-kiosk.md` for the kiosk use case this
 was built for.
 
+`public/formats.js` is the one table of presentations, loaded by both
+pages with a plain `<script src>` — the editor builds its Presentation
+dropdown from it, the display resolves a stored `format` slug through it.
+Two copies of that table would drift, and there's no build step to make
+one from the other.
+
 `dev/dummy_signalk.py` only speaks the delta/websocket protocol, so it
 can drive `?path=...` URLs but not `?display=` ones — testing the stored
--config path needs a real signalk-server. Repeat `--path` (and `--field`,
-matched by position) to drive a multi-value display.
+-config path needs a real signalk-server, and so does the editor's path
+dropdown, which reads `/signalk/v1/api/vessels/self`. Repeat `--path`
+(and `--field`, matched by position) to drive a multi-value display.
+
+## Path and presentation
+
+A value is `path` + `format` + `name` + colours. Nothing else is
+configurable from the webapp, and that's the point: the two dropdowns are
+orthogonal, so any path can be shown any way without anyone having
+thought of the combination in advance.
+
+**The path dropdown is live.** `loadPaths()` fetches
+`/signalk/v1/api/vessels/self` and `flattenPaths()` walks it: a leaf is
+any node carrying a `value`, and an object value (`navigation.attitude`,
+`navigation.position`) becomes one entry per numeric key — the same
+`path`/`field` pair a cell subscribes with. There is no hardcoded path
+list and no free-text box, so the dropdown is exactly what this boat
+produces. The one concession: a *saved* path that isn't in the live list
+is added back at the top marked "not currently reporting", because
+editing a display's colours at the dock with the instruments off must not
+silently drop its path.
+
+An earlier attempt at path discovery was rejected because SignalK's
+`meta` can't supply `layout` or `neg` — it has no number-format field and
+no sign field, so discovery alone still left the two fiddliest fields
+hand-set. The presentation dropdown is what supplies those. Don't
+reintroduce meta-driven unit lookup on the strength of this: `meta.units`
+is always the SI unit, which is what `factor` already assumes.
+
+**`format` expands, raw keys override.** `makeItem()` resolves
+`FORMAT_BY_ID[raw.format]` first and then lets any explicitly given
+`factor`/`offset`/`unit`/`layout`/`neg`/`wrap` win. That ordering — not a
+migration — is what keeps every config and URL written before formats
+existed meaning exactly what it meant then, and it's what leaves a way to
+show something no presentation covers. An unknown slug resolves to
+nothing and changes no key. `mode` (`"duration"`, `"clock"`) is the
+exception: it comes from the table only, never from a raw key, so a
+hand-written config can't reach a time rendering by accident.
+
+`matchFormat()` in the editor recognises a pre-format config by its
+conversion keys and upgrades it to a slug on the next save. `mode` is in
+its signature so the time entries can never match — a stored item has no
+mode, and the two HH:MM:SS entries are otherwise identical.
+
+The digit mask is the single source of width. `layout.replace(/[^.:]/g, …)`
+gives the placeholder (`--:--:--`) and `fitDisplay()`'s measuring sample
+(`88:88:88`) from the same string, which is why a colon is measured as a
+colon rather than as a digit. Time renderings clamp their leading field
+to two digits rather than growing a third — a number that changes width
+can't be read from a moving boat.
 
 ## One, two or three values
 
