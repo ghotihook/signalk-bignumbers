@@ -90,7 +90,7 @@ A cheap Pi that has to boot into a live number and stay light.
 ## Layout of the repo
 
 Static SignalK webapp (no build step, no bundler) — `public/index.html` is
-the instrument picker, `public/instrument.html` is the display, both
+the display manager, `public/instrument.html` is the display, both
 plain HTML/CSS/JS served as-is. `dev/dummy_signalk.py` is a standalone
 Python dev server for local testing, unrelated to the webapp build.
 
@@ -274,7 +274,7 @@ tooling to generate a lockfile-driven ignore list from.
 
 ## Versioning
 
-`package.json` `version` and the `v0.0.5` label in `public/index.html`
+`package.json` `version` and the `v0.0.8` label in `public/index.html`
 are both hand-maintained — there's no build step to derive one from the
 other, so bump both together, and tag the release commit (`git tag -a
 X.Y.Z`).

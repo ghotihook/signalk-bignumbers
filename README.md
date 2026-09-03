@@ -44,9 +44,9 @@ to spare.
 **Nothing to install or configure on the display.** Anything with a
 browser is a display the moment you open a URL on it: phone, old iPad,
 laptop, Pi with an HDMI panel. Deploying one is open the URL, read the
-name off the screen, add it in the webapp; configuring it is picking an
-instrument from a dropdown. The display holds no config and no
-credentials, so changing what it shows never means touching it.
+name off the screen, add it in the webapp; configuring it is picking a
+path and a presentation from two dropdowns. The display holds no config
+and no credentials, so changing what it shows never means touching it.
 
 Not an MFD: no charts, gauges, graphs, history, AIS, alarms, nothing to
 touch.
@@ -75,8 +75,8 @@ URL; use the same word in the next step.
 
 **3. Tell it what to show.** From any browser, open
 `http://signalk.local:3000/signalk-bignumbers/` (also in SignalK's
-Webapps menu). Log in at the top, **+ Add display**, type `phone`, pick an
-instrument, **Save**.
+Webapps menu). Log in at the top, **+ Add display**, type `phone`, pick a path
+and a presentation, **Save**.
 
 ![The webapp's display list: a row for phone showing STW, TWA and TWS, alongside a mast1 row from an earlier setup, each with Edit and Delete buttons](docs/images/webapp-displays.png)
 
@@ -176,7 +176,7 @@ the npm registry, so this gets the current `main`. Add `#<tag>` or
 `#<branch>` to pin one:
 
 ```bash
-npm install github:ghotihook/signalk-bignumbers#0.0.7
+npm install github:ghotihook/signalk-bignumbers#0.0.8
 ```
 
 `cd ~/.signalk` matters: signalk-server scans that directory's
@@ -210,7 +210,7 @@ about what one means. A few of them:
 | Presentation | Shows |
 |---|---|
 | ±180° — wind angle | `-143°`, folded back from 0…360 if the source sends it that way |
-| 0–360° — heading, course, direction | `047°` |
+| 0–360° — heading, course, direction | `183°`, in a three-digit column so it can't shift |
 | Knots — xx.x | `8.4 kt` from SignalK's m/s |
 | Celsius | `18.3 °C` from SignalK's Kelvin |
 | Duration — HH:MM:SS | `01:02:05` from a count of seconds, e.g. time to go |
@@ -240,6 +240,12 @@ needs **Security → Settings → Allow Readonly Access** enabled, or nothing
 reaches the screen at all. The webapp checks this on load and warns if
 it's off, and a display that can't read its config says so rather than
 falling through to the "not configured" screen.
+
+The editor's path dropdown is the boat's own data: it reads
+`/signalk/v1/api/vessels/self` and lists what the server is reporting
+right now. With the instruments off there is nothing to pick from, so
+set a display up with its sources live. A path already saved on a display
+stays in its dropdown either way, marked *not currently reporting*.
 
 An unconfigured display polls every 5s waiting for a config to appear; a
 running one re-checks its own every 5s and reloads if it changed.
@@ -301,7 +307,7 @@ instrument.html?path=environment.wind.speedApparent&name=AWS&format=speed-kn
 |---|---|
 | `path` | SignalK path to subscribe to (required) |
 | `name` | Label shown top-left of the band (required) |
-| `format` | A presentation from [`public/formats.js`](public/formats.js) — `speed-kn`, `angle-180`, `temp-c`, `dur-hms` and so on. Stands in for the six keys below |
+| `format` | A presentation from [`public/formats.js`](public/formats.js) — `speed-kn`, `angle-180`, `temp-c`, `dur-hms` and so on. Stands in for `layout`, `neg`, `wrap`, `unit`, `factor` and `offset` |
 | `field` | Key to read from a compound value, e.g. `roll` |
 | `layout` | Digit template, e.g. `xxx` or `xx.xx` — sets the autosize and decimal places |
 | `neg` | `true` to reserve room for a minus sign |
@@ -328,8 +334,11 @@ A missing `path2` ends the list, so values can't have gaps. `host` and
 `format` is shorthand, not a replacement: `layout`, `neg`, `wrap`, `unit`,
 `factor` and `offset` still work on their own, and given alongside a
 `format` they override it. So every URL written before presentations
-existed still means exactly what it meant then, and anything the list
+existed still means exactly what it meant then, and a conversion the list
 doesn't cover can still be spelled out key by key.
+
+The one exception is the time presentations: `HH:MM:SS` and the clock are
+reachable only through `format`, never through the raw keys.
 
 `bg` and `fg` do double duty: suffixed (`bg2`, `fg3`) they colour just
 that band; unsuffixed they set the first band's colours *and* the
@@ -344,6 +353,8 @@ The webapp's **Preview** button builds these URLs for you.
   displays.
 - **`public/instrument.html`** — the display itself. Fills the screen
   with up to three numbers, autosized to fit.
+- **`public/formats.js`** — the presentations, read by both pages: each
+  one's conversion, unit, digit layout and sign handling.
 - **`docs/raspberry-pi-kiosk.md`** — building a display from a Pi.
 - **`dev/dummy_signalk.py`** — a fake SignalK server that sweeps values
   through a range, for testing without a boat. Speaks only the delta

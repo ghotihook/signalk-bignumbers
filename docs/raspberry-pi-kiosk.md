@@ -59,7 +59,7 @@ hostname. Nothing is stored yet, so:
    Settings → Allow Readonly Access** enabled — the webapp warns at the
    top if it isn't.
 3. **+ Add display**, enter the hostname shown on the kiosk's screen,
-   pick the instrument, **Save**.
+   pick a path and a presentation, **Save**.
 
 ![The webapp's display list, with rows for mast1 and phone showing the instruments each is displaying](images/webapp-displays.png)
 
