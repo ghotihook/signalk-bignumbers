@@ -259,6 +259,13 @@ user can write. `name` and `unit` are safe only because they go through
 `textContent` — keep it that way, and never build a cell with
 `innerHTML`.
 
+`format` is safe for the same kind of reason: it is only ever a key into
+`FORMAT_BY_ID`, so a hostile value selects nothing rather than
+contributing anything to the page. It must never become a string that
+reaches the DOM or CSS — and the values it resolves to come from
+`formats.js`, not from the store, which is what keeps a stored config
+from inventing its own conversion table.
+
 Known and accepted, so they don't get re-litigated: the SignalK token
 sits in `localStorage` (SignalK serves every webapp from one origin, so a
 compromised sibling webapp could read it), and credentials cross a boat

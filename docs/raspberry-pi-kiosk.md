@@ -220,7 +220,8 @@ which repeats every per-value parameter two or three times: one missed
 Related: **non-ASCII characters can be mangled** if typed on an SSH
 session that isn't in a UTF-8 locale, and cog then rejects the URL as
 invalid UTF-8. Percent-encode them — `°` is `%C2%B0` (`%%C2%%B0` in a
-unit file).
+unit file). `format=` sidesteps this too: the presentation carries its
+own unit label, so a degree sign never has to be typed into a URL.
 
 If you'd rather have an identifier that survives a rename, `%m` expands
 to the machine ID — but it's 32 hex characters, unpleasant to read off a
