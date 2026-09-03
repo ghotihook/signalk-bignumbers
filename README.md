@@ -192,7 +192,7 @@ the display picks it up within about 5 seconds; **Delete** sends it back
 to showing its own name, ready to be reassigned. A display's name is
 fixed once created.
 
-<img src="docs/images/webapp-edit.png" alt="The display editor: dropdowns for Path and Presentation, a Display name field and a Colours dropdown" width="460">
+<img src="docs/images/webapp-edit.png" alt="The display editor for phone: value 1 is navigation.speedThroughWater shown as Knots — xx.x, named STW, black on white; value 2 is environment.wind.angleTrueWater shown as ±180° — wind angle, named TWA, cyan on black" width="460">
 
 Per value:
 
