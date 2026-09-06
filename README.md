@@ -76,7 +76,7 @@ URL; use the same word in the next step.
 **3. Tell it what to show.** From any browser, open
 `http://signalk.local:3000/signalk-bignumbers/` (also in SignalK's
 Webapps menu). Log in at the top, **+ Add display**, type `phone`, pick a path
-and a presentation, **Save**.
+and a presentation, name it, **Save**.
 
 ![The webapp's display list: a row for phone showing STW, TWA and TWS, alongside a mast1 row from an earlier setup, each with Edit and Delete buttons](docs/images/webapp-displays.png)
 
@@ -176,7 +176,7 @@ the npm registry, so this gets the current `main`. Add `#<tag>` or
 `#<branch>` to pin one:
 
 ```bash
-npm install github:ghotihook/signalk-bignumbers#0.0.9
+npm install github:ghotihook/signalk-bignumbers#0.0.10
 ```
 
 `cd ~/.signalk` matters: signalk-server scans that directory's
@@ -190,7 +190,9 @@ after the restart, served at
 One row per display, showing what it's set to. **Edit** changes it and
 the display picks it up within about 5 seconds; **Delete** sends it back
 to showing its own name, ready to be reassigned. A display's name is
-fixed once created.
+fixed once created, and is letters, digits, dots and hyphens only — on a
+Pi it has to match the hostname character for character, and either way
+it goes into a URL.
 
 <img src="docs/images/webapp-edit.png" alt="The display editor for phone: value 1 is navigation.speedThroughWater shown as Knots — xx.x, named STW, black on white; value 2 is environment.wind.angleTrueWater shown as ±180° — wind angle, named TWA, cyan on black" width="460">
 
@@ -202,6 +204,9 @@ Per value:
 | **Presentation** | How to show it: the conversion from SignalK's SI units, the unit label, the digit layout and the sign handling, in one pick. Grouped by kind — Angle, Speed, Depth, Distance, Temperature, Time, Electrical, Other, Number. |
 | **Display name** | The label above the number. |
 | **Colours** | Fixed high-contrast pairs. Red or amber on black preserve night vision; black on white or black on amber read better in direct sun. |
+
+Path, Presentation and Display name are all required: **Save** and
+**Preview** outline anything left blank and say what it needs.
 
 The presentations are listed in [`public/formats.js`](public/formats.js),
 which the editor and the display both read, so the two can't disagree
@@ -226,7 +231,11 @@ sharing a background are divided by a hairline; otherwise the colour
 change is the divide. Use mixed backgrounds sparingly — they cost some of
 the dark adaptation the night themes protect.
 
-**Preview** opens the config in a new tab before saving.
+**Preview** opens the config in a new tab before saving. It needs the
+values filled in first, though not the display's name — an incomplete one
+previews as a screen you didn't configure: a value with no path drops out
+of the URL, and one with no presentation shows the raw SI number in a
+single digit column.
 
 ## Configuration and permissions
 

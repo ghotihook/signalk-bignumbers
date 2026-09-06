@@ -213,6 +213,50 @@ screen sends whoever reads it off to add a display that's already there.
 cookie would otherwise authenticate the probe and pass it on a server
 where every display fails.
 
+## Mandatory fields in the editor
+
+Every field is mandatory except Colours, which always has a value. So
+validation is about saying *which* field is missing, not about which ones
+are optional — and there are no asterisks on the labels, because marking
+all but one is noise.
+
+`checkEditor(problems)` takes `[element, message]` pairs, which is what
+lets Save and Preview compose different checks:
+
+- **Preview checks the value slots only.** Its URL carries every value as
+  a parameter and never reads the hostname, so requiring one would be a
+  check for its own sake. It does insist on the values: `itemsFromParams()`
+  stops at the first missing path, so a gap drops that value and every one
+  after it, and a value with no presentation falls back to a one-digit
+  layout on the raw SI number. Either way the preview is a screen nobody
+  configured.
+- **The hostname check is skipped while the field is disabled**, which is
+  whenever an existing display is being edited. The hostname is fixed at
+  creation, so checking it would strand any display created before the
+  check existed, or written straight into `applicationData` — permanently
+  uneditable over a field nobody can change.
+
+Correcting any outlined field drops the message. Following one particular
+field instead — so the message survives until *that* one is fixed — costs
+a variable touched from three places and buys a message that can outlive
+what it describes. The outlines are what track the rest.
+
+`HOSTNAME_RE` allows dots so an FQDN passes. The point isn't strictness:
+the name has to match systemd's `%H` character for character, and a space
+or a slash makes a display that silently never finds its config.
+
+Validation reads the DOM directly rather than going through
+`currentConfig()`, so it can name a field; nothing about the stored shape
+changes. There's no `<form>`, no `required` and no constraint-validation
+API — the page has no form element, and native validation bubbles don't
+match the theme.
+
+`start()` in `instrument.html` refuses the same thing from the other end,
+and its message is named for which config source it came from: a display
+on `?display=` has no `?path=` to point anyone at. With the editor
+refusing to save one, reaching that screen from the store now takes a
+hand-written entry.
+
 ## Two invariants in instrument.html
 
 Both were bugs once; the code comments say so locally, but they're easy
@@ -281,7 +325,10 @@ tooling to generate a lockfile-driven ignore list from.
 
 ## Versioning
 
-`package.json` `version` and the `v0.0.9` label in `public/index.html`
-are both hand-maintained — there's no build step to derive one from the
-other, so bump both together, and tag the release commit (`git tag -a
-X.Y.Z`).
+Three hand-maintained places, with no build step to derive one from
+another: `package.json` `version`, the `v0.0.10` label in
+`public/index.html`, and the `#X.Y.Z` pin on the GitHub-install example
+in `README.md`. Bump all three together and tag the release commit (`git
+tag -a X.Y.Z`). The README pin is the one that rots unnoticed — nothing
+reads it, so a stale version there installs the wrong code without
+erroring.

@@ -376,8 +376,14 @@
   // Like run(), at most once per page load -- it builds the cells. Config
   // changes are handled by reloading the page, not by calling this again.
   function start() {
+    // Named for where the config came from: a display using ?display= has
+    // no parameters to check, so pointing at them sends whoever reads it
+    // looking in the wrong place. The editor won't save an incomplete
+    // config, so from that side this needs a hand-written store entry.
     if (!CONFIG.items.length || CONFIG.items.some((item) => !item.path || !item.name)) {
-      showError("Missing required ?path= and/or ?name= parameter");
+      showError(displayId
+        ? `${displayId}'s config is incomplete — every value needs a path and a name`
+        : "Missing required ?path= and/or ?name= parameter");
       return;
     }
     document.title = CONFIG.items.map((item) => item.name).join(" · ");

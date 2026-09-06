@@ -92,6 +92,9 @@
   .status.error { color: #e77; }
   .status.ok { color: #7c7; }
 
+  /* A mandatory field left empty, in the same red as the status line. */
+  .invalid { border-color: #e77; }
+
   /* --- login bar --- */
   .authbar {
     display: flex;
@@ -237,7 +240,7 @@
 </head>
 <body>
 <main>
-  <h1>signalk-bignumbers <span class="version">v0.0.9</span></h1>
+  <h1>signalk-bignumbers <span class="version">v0.0.10</span></h1>
 
   <div class="authbar">
     <span id="authState">Not logged in</span>
@@ -608,6 +611,9 @@
     el("editorSub").textContent = code ? code : "";
     el("code").value = code || "";
     el("code").disabled = !!code;
+    // The slots are rebuilt below, but #code outlives the editor being
+    // closed, so it would keep an outline from an abandoned save.
+    el("code").classList.remove("invalid");
     el("codeHint").textContent = code
       ? "Fixed once created. To point a different Pi at this instrument, delete this entry and add its hostname instead."
       : "The hostname of the Pi running this display, exactly as it appears in large text on its screen.";
@@ -815,6 +821,66 @@
     return { bg: items[0].bg, fg: items[0].fg, items };
   }
 
+  // --- mandatory fields -------------------------------------------------
+  // Everything here is mandatory except the colours, which always have a
+  // value. Each check returns [element, message] pairs, so Save and Preview
+  // can compose the checks each of them needs.
+
+  // A hostname as systemd's %H gives it: letters, digits, dots and hyphens,
+  // starting and ending on an alphanumeric. It has to match the Pi character
+  // for character or the display never finds its config.
+  const HOSTNAME_RE = /^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$/;
+
+  function hostnameProblem() {
+    const field = el("code");
+    // Fixed once created, and disabled to say so. Checking it here would
+    // make a display created before this check permanently uneditable.
+    if (field.disabled) return [];
+    const code = field.value.trim();
+    if (!code) return [[field, "Enter the display's hostname."]];
+    if (!HOSTNAME_RE.test(code)) {
+      return [[field, "A hostname is letters, digits, dots and hyphens only."]];
+    }
+    return [];
+  }
+
+  function slotProblems() {
+    const out = [];
+    slots.forEach((slot, i) => {
+      // Value 1's header is hidden when it is the only one, so naming it
+      // there would point at a number nothing on screen shows.
+      const which = slots.length > 1 ? `Value ${i + 1}` : "This value";
+      if (!slot.f("path").value) out.push([slot.f("path"), `${which} needs a path.`]);
+      if (!slot.f("format").value) out.push([slot.f("format"), `${which} needs a presentation.`]);
+      if (!slot.f("name").value.trim()) out.push([slot.f("name"), `${which} needs a display name.`]);
+    });
+    return out;
+  }
+
+  // Outlines everything missing, names the first one and puts the cursor
+  // there. True when there is nothing missing.
+  function checkEditor(problems) {
+    el("editorView").querySelectorAll(".invalid")
+      .forEach((node) => node.classList.remove("invalid"));
+    if (!problems.length) return true;
+    problems.forEach(([field]) => field.classList.add("invalid"));
+    const [field, message] = problems[0];
+    setStatus("editorStatus",
+      problems.length > 1 ? `${message} (${problems.length} fields to fill in.)` : message,
+      "error");
+    field.focus(); // scrolls it into view on its own
+    return false;
+  }
+
+  // Correcting anything drops the message; the outlines track what's left.
+  // Delegated, so a slot added later needs no wiring, and a select fires
+  // `input` too, so one listener covers both kinds of field.
+  el("editorView").addEventListener("input", (e) => {
+    if (!e.target.classList.contains("invalid")) return;
+    e.target.classList.remove("invalid");
+    setStatus("editorStatus", "");
+  });
+
   function updateKioskUrl() {
     const code = el("code").value.trim();
     el("kioskUrlWrap").hidden = !code;
@@ -825,13 +891,11 @@
   el("addSlotBtn").addEventListener("click", () => addSlot(null));
 
   el("saveBtn").addEventListener("click", async () => {
-    const code = el("code").value.trim();
-    if (!code) { setStatus("editorStatus", "Enter the display code first.", "error"); return; }
+    // Logging in is a precondition of saving at all, so it comes before the
+    // form checks -- no point filling three values in to be told at the end.
     if (!token()) { setStatus("editorStatus", "Log in first (top of page).", "error"); return; }
-    if (currentConfig().items.some((item) => !item.path || !item.format || !item.name)) {
-      setStatus("editorStatus", "Every value needs a path, a presentation and a name.", "error");
-      return;
-    }
+    if (!checkEditor(hostnameProblem().concat(slotProblems()))) return;
+    const code = el("code").value.trim();
 
     setStatus("editorStatus", "Saving...");
     try {
@@ -852,6 +916,12 @@
   // Opens the current settings as a direct full-parameter instrument URL,
   // so a config can be eyeballed before it's saved to any display.
   el("previewBtn").addEventListener("click", () => {
+    // The slots only: this URL carries every value as a parameter and never
+    // reads the hostname. It insists on the values because an incomplete one
+    // previews as a screen nobody configured -- itemsFromParams() stops at
+    // the first missing path, dropping that value and the rest, and a value
+    // with no presentation renders raw SI at a one-digit layout.
+    if (!checkEditor(slotProblems())) return;
     const cfg = currentConfig();
     const params = new URLSearchParams({ host: HOST, bg: cfg.bg, fg: cfg.fg });
     // The same suffix scheme instrument.html reads: none for the first
