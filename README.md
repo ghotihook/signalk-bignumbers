@@ -176,7 +176,7 @@ the npm registry, so this gets the current `main`. Add `#<tag>` or
 `#<branch>` to pin one:
 
 ```bash
-npm install github:ghotihook/signalk-bignumbers#0.0.10
+npm install github:ghotihook/signalk-bignumbers#0.0.11
 ```
 
 `cd ~/.signalk` matters: signalk-server scans that directory's
@@ -321,7 +321,7 @@ instrument.html?path=environment.wind.speedApparent&name=AWS&format=speed-kn
 | `layout` | Digit template, e.g. `xxx` or `xx.xx` — sets the autosize and decimal places |
 | `neg` | `true` to reserve room for a minus sign |
 | `wrap` | `true` to fold the converted value into −180…180 |
-| `unit` | Label shown after the number |
+| `unit` | Shown in brackets after the name: `STW (kt)` |
 | `factor`, `offset` | Unit conversion: `shown = raw * factor + offset` |
 | `bg`, `fg` | Theme colours for this value's band; unsuffixed they also set the screen's. Hex only (`#000000`, `#fff`) — anything else is ignored |
 | `host` | SignalK server, if not the one serving the page (whole screen) |

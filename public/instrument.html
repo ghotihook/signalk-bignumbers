@@ -17,7 +17,6 @@
   :root {
     --bg: #000;
     --fg: #fff;
-    /* Shared by the title and the unit so the two labels always match. */
     --label-size: clamp(1.6rem, 5vw, 4rem);
   }
   html, body {
@@ -46,7 +45,7 @@
   }
   /* Labels are sized against the band they sit in: with two or three
      stacked, each band is shorter and a full-height label would crowd its
-     number. One variable, so the title and unit shrink together. */
+     number. */
   #cells.n2 { --label-size: clamp(1.3rem, 3.4vw, 2.6rem); }
   #cells.n3 { --label-size: clamp(1.1rem, 2.6vw, 2rem); }
   .cell {
@@ -58,7 +57,7 @@
     justify-content: center;
     /* Re-resolved here, not just inherited from body, so a band that sets
        its own --bg/--fg re-themes everything inside it: the digits, the
-       opacity-derived title and unit, and the currentColor rule below. */
+       opacity-derived title, and the currentColor rule below. */
     background: var(--bg);
     color: var(--fg);
   }
@@ -87,7 +86,7 @@
     font-weight: 500;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    opacity: 0.6;
+    opacity: 0.75;
   }
   .value-row {
     display: flex;
@@ -117,14 +116,12 @@
   .ghost {
     visibility: hidden;
   }
+  /* In the title rather than beside the number, so the digits get its width
+     back. The title's capitals would turn "kt" into "KT" and "hPa" into
+     "HPA", which are different units. */
   .unit {
-    /* Absolute rather than an em of the value row, so it tracks the title
-       instead of growing with the number. fitDisplay() still converges:
-       the unit is then a constant width in the row it measures. */
-    font-size: var(--label-size);
-    font-weight: 500;
-    opacity: 0.6;
-    margin-left: 0.4em;
+    text-transform: none;
+    letter-spacing: 0.05em;
   }
   .error {
     font-size: clamp(1.2rem, 3vw, 2rem);
@@ -169,7 +166,7 @@
   <div id="statusDot"></div>
   <div id="cells" hidden></div>
   <!-- Error / "not configured yet" content lives here rather than being
-       written into a cell, so the sign/value/unit elements are never
+       written into a cell, so the sign and value elements are never
        destroyed and their references stay valid for the life of the page. -->
   <div id="message" hidden></div>
 
@@ -340,18 +337,21 @@
       const titleEl = document.createElement("div");
       titleEl.className = "title";
       titleEl.textContent = cfg.name;
+      if (cfg.unit) {
+        const unitEl = document.createElement("span");
+        unitEl.className = "unit";
+        unitEl.textContent = ` (${cfg.unit})`;
+        titleEl.append(unitEl);
+      }
       const rowEl = document.createElement("div");
       rowEl.className = "value-row";
       const signEl = document.createElement("span");
       signEl.className = "sign";
       const valueEl = document.createElement("span");
       valueEl.className = "value";
-      const unitEl = document.createElement("span");
-      unitEl.className = "unit";
-      unitEl.textContent = cfg.unit;
       // Appended as elements, never via innerHTML: .value is white-space:pre,
       // so whitespace between the tags would render as a real space.
-      rowEl.append(signEl, valueEl, unitEl);
+      rowEl.append(signEl, valueEl);
       el.append(titleEl, rowEl);
       cellsEl.appendChild(el);
       return {
