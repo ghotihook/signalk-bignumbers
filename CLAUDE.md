@@ -261,7 +261,7 @@ over http. Neither is fixable from inside this webapp.
 ## Releasing
 
 Three hand-maintained version strings, with no build step to derive one
-from another: `package.json` `version`, the `v0.0.11` label in
+from another: `package.json` `version`, the `v0.0.12` label in
 `public/index.html`, and the `#X.Y.Z` pin on the GitHub-install example
 in `README.md`. Bump all three together and tag the release commit (`git
 tag -a X.Y.Z`).
