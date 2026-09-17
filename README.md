@@ -203,7 +203,7 @@ Per value:
 | **Path** | What to show, picked from the paths this server is currently reporting. A compound value appears once per key (`navigation.attitude → roll`). A path the server has stopped reporting stays selected on a saved display, marked *not currently reporting*. |
 | **Presentation** | How to show it: the conversion from SignalK's SI units, the unit label, the digit layout and the sign handling, in one pick. Grouped by kind — Angle, Speed, Depth, Distance, Temperature, Time, Electrical, Other, Number. |
 | **Display name** | The label above the number. |
-| **Colours** | Fixed high-contrast pairs. Red or amber on black preserve night vision; black on white or black on amber read better in direct sun. |
+| **Colours** | Fixed high-contrast pairs, grouped Day, Dusk and Night. See [Colours](#colours). |
 
 Path, Presentation and Display name are all required: **Save** and
 **Preview** outline anything left blank and say what it needs.
@@ -228,14 +228,40 @@ the URL directly — see [Direct URLs](#direct-urls).
 They split it into equal horizontal bands, top to bottom in the order
 listed, each with its own colours, all at the same digit size. Bands
 sharing a background are divided by a hairline; otherwise the colour
-change is the divide. Use mixed backgrounds sparingly — they cost some of
-the dark adaptation the night themes protect.
+change is the divide. At night keep every band on black — one bright band
+costs the dark adaptation the night themes protect.
 
 **Preview** opens the config in a new tab before saving. It needs the
 values filled in first, though not the display's name — an incomplete one
 previews as a screen you didn't configure: a value with no path drops out
 of the URL, and one with no presentation shows the raw SI number in a
 single digit column.
+
+### Colours
+
+Fixed pairs, chosen for reading distance rather than taste. Day themes put
+black digits on a bright background: a brighter screen reads better, and
+reflections of sky and sails vanish against it where they'd show on black.
+
+<img src="docs/images/themes-day.png" alt="The nine day themes, each a display showing a live reading: black on white, yellow, sky blue, hi-vis lime, mint, peach, lavender and orange, and navy on white" width="720">
+
+Dusk and night put light digits on black. Red and dim red light only the
+red sub-pixel, which the eye's night-vision rods barely register; amber
+lights green too, so it suits dusk rather than full dark. Dim red is for a
+screen whose backlight can't be turned down — the page can't dim it.
+
+<img src="docs/images/themes-night.png" alt="The four dusk and night themes: white, amber, red and dim red digits on black" width="720">
+
+With two or three values, a different background per band lets a glance
+find the right number. The day colours stay distinct to red-green
+colour-blind crew — about one man in twelve — except lime beside yellow
+and lavender beside sky blue, so don't stack either pair.
+
+<img src="docs/images/themes-bands.png" alt="Three-band displays in white, yellow and sky blue; lime, white and lavender; yellow, mint and lavender; and white on black in every band" width="720">
+
+A display saved with a colour earlier versions offered moves to its
+replacement the next time it's edited and saved; until then it keeps its
+colours.
 
 ## Configuration and permissions
 

@@ -364,15 +364,42 @@
   // the combinations that stay readable on a screen in a cockpit. The
   // display only ever receives two colours (bg/fg) and derives the muted
   // title/unit shades from them, so a theme needs nothing else.
+  //
+  // Day themes are dark digits on a bright ground: brighter screens read
+  // better, and sky reflections vanish against them. Their grounds differ
+  // along blue-yellow, which red-green colour blindness leaves intact.
+  // Night reds light the red sub-pixel alone, which rods barely see.
   const THEMES = [
-    { name: "White on black", bg: "#000000", fg: "#ffffff" },
-    { name: "Black on white (daylight)", bg: "#ffffff", fg: "#000000" },
-    { name: "Red on black (night vision)", bg: "#000000", fg: "#ff3b30" },
-    { name: "Amber on black (night)", bg: "#000000", fg: "#ffb000" },
-    { name: "Green on black", bg: "#000000", fg: "#2fdf5a" },
-    { name: "Cyan on black", bg: "#000000", fg: "#3ad8ff" },
-    { name: "Black on amber (daylight)", bg: "#ffb000", fg: "#000000" },
+    { group: "Day", name: "Black on white", bg: "#ffffff", fg: "#000000" },
+    { group: "Day", name: "Black on yellow", bg: "#ffe600", fg: "#000000" },
+    { group: "Day", name: "Black on sky blue", bg: "#a0e8ff", fg: "#000000" },
+    { group: "Day", name: "Black on hi-vis lime", bg: "#ccff00", fg: "#000000" },
+    { group: "Day", name: "Black on mint", bg: "#a8ffc4", fg: "#000000" },
+    { group: "Day", name: "Black on peach", bg: "#ffc49a", fg: "#000000" },
+    { group: "Day", name: "Black on lavender", bg: "#d2c4ff", fg: "#000000" },
+    { group: "Day", name: "Black on orange", bg: "#ffa000", fg: "#000000" },
+    { group: "Day", name: "Navy on white", bg: "#ffffff", fg: "#002a80" },
+    { group: "Dusk", name: "White on black", bg: "#000000", fg: "#ffffff" },
+    { group: "Dusk", name: "Amber on black", bg: "#000000", fg: "#ffb000" },
+    { group: "Night", name: "Red on black", bg: "#000000", fg: "#ff0000" },
+    { group: "Night", name: "Dim red on black", bg: "#000000", fg: "#8b0000" },
   ];
+
+  // Pairs earlier versions offered, mapped to what replaced them. Without
+  // this the editor can't match a saved display's colours, falls back to
+  // the first theme, and the next save silently recolours it. Retire a
+  // theme by adding it here, never by just deleting it.
+  const RETIRED = {
+    "#000000/#ff3b30": "#000000/#ff0000", // red: now red sub-pixel only
+    "#ffb000/#000000": "#ffe600/#000000", // black on amber -> black on yellow
+    "#000000/#2fdf5a": "#000000/#ff0000", // green on black -> red
+    "#000000/#3ad8ff": "#000000/#ffffff", // cyan on black -> white
+  };
+
+  function themeIndex(bg, fg) {
+    const key = RETIRED[`${bg}/${fg}`] || `${bg}/${fg}`;
+    return THEMES.findIndex((t) => `${t.bg}/${t.fg}` === key);
+  }
 
   const el = (id) => document.getElementById(id);
   const TOKEN_KEY = "sk_token";
@@ -770,8 +797,16 @@
     slot.f("name").value = item.name || "";
 
     const themeSelect = slot.f("theme");
-    THEMES.forEach((t, i) => themeSelect.appendChild(new Option(t.name, i)));
-    const theme = THEMES.findIndex((t) => t.bg === item.bg && t.fg === item.fg);
+    THEMES.forEach((t, i) => {
+      let group = themeSelect.lastElementChild;
+      if (!group || group.label !== t.group) {
+        group = document.createElement("optgroup");
+        group.label = t.group;
+        themeSelect.appendChild(group);
+      }
+      group.appendChild(new Option(t.name, i));
+    });
+    const theme = themeIndex(item.bg, item.fg);
     themeSelect.value = String(theme >= 0 ? theme : 0);
 
     slot.f("remove").addEventListener("click", () => {
