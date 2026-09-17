@@ -272,7 +272,7 @@
     host: params.get("host") || window.location.host,
     bg: colour(params.get("bg")), // theme background, e.g. #000000
     fg: colour(params.get("fg")), // theme foreground, e.g. #ffffff
-    staleMs: 3000,                // grey out (and reset to placeholder) if no update within this window
+    staleMs: 3000,                // fade to placeholder dashes if no update within this window
     reconnectMs: 1000,            // delay before retrying a dropped connection
     items: itemsFromParams(params).map(makeItem),
   };
@@ -399,8 +399,9 @@
   // keyed by identifier. A missing config is the normal state for a
   // freshly set-up display, so that case polls (showing the id) rather
   // than giving up -- it picks the config up as soon as it's saved, with
-  // no restart needed. A genuine network/server problem still gives up
-  // after a handful of quick retries and shows an error instead.
+  // no restart needed. A network or server fault retries quickly a few
+  // times, then shows an error and keeps retrying slowly: a Pi that boots
+  // before SignalK is up must come good on its own.
   const POLL_MS = 5000;
 
   function configUrl() {
@@ -423,7 +424,12 @@
         // document would land on the "not configured" screen and send
         // whoever reads it off to add a display that's already there.
         if (r.status === 401 || r.status === 403) return DENIED;
-        return r.ok ? r.json() : {};
+        // Only a 404 means nothing is stored. Any other error is the server
+        // failing -- a restart, a proxy -- and reading it as an empty store
+        // would put "not configured" on a display that is.
+        if (r.status === 404) return {};
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
       })
       .then((data) => {
         if (data === DENIED) {
@@ -451,11 +457,8 @@
         start();
         watchForConfigChanges(JSON.stringify(raw));
       }, () => {
-        if (attempt < 5) {
-          setTimeout(() => fetchDisplayConfig(attempt + 1), CONFIG.reconnectMs);
-        } else {
-          showError(`Can't reach SignalK at ${CONFIG.host}`);
-        }
+        if (attempt >= 5) showError(`Can't reach SignalK at ${CONFIG.host}`);
+        setTimeout(() => fetchDisplayConfig(attempt + 1), attempt < 5 ? CONFIG.reconnectMs : POLL_MS);
       });
   }
 
@@ -463,12 +466,13 @@
   // picker takes effect on its own with no restart. Reloading re-runs the
   // whole load path, which covers every case for free -- including the
   // config being deleted, which lands back on the "show my code" screen.
-  // A failed poll is ignored: only a genuinely different config reloads,
-  // so a network blip can't cause a reload loop.
+  // A failed poll is ignored, whether the fetch fails or the server answers
+  // with an error: only a genuinely different config reloads, so a network
+  // blip or a SignalK restart can't cause a reload.
   function watchForConfigChanges(loadedJson) {
     setInterval(() => {
       fetch(configUrl())
-        .then((r) => (r.ok ? r.json() : {}))
+        .then((r) => (r.ok ? r.json() : r.status === 404 ? {} : Promise.reject()))
         .then((data) => {
           if (JSON.stringify(data[displayId] || null) !== loadedJson) window.location.reload();
         }, () => {});
@@ -576,6 +580,10 @@
       const [intPart, decPart] = absStr.split(".");
       const roundsToZero = parseFloat(absStr) === 0;
       const sign = !cfg.expectNegative ? "" : (roundsToZero || scaled >= 0 ? " " : "-");
+      // Too big for the mask: an extra digit would push the row past the
+      // edges and clip the leading one, so 140.2 reads as 40.2. Show the
+      // mask as ^ instead -- not a reading, and not the stale dashes.
+      if (intPart.length > cfg.intDigits) return { sign, text: cfg.layout.replace(/[^.:]/g, "^") };
       return { sign, intPart: intPart.padStart(cfg.intDigits, "0"), decPart };
     }
 
@@ -603,7 +611,7 @@
       const out = formatValue(c.cfg, v);
       if (!out) return; // unreadable: not a reading, so let the band go stale
       c.signEl.textContent = out.sign;
-      // A time mask is fixed-width already, and has no leading zeros to ghost.
+      // A time mask or overflow is fixed-width already, with no zeros to ghost.
       if (out.text !== undefined) c.valueEl.textContent = out.text;
       else c.valueEl.innerHTML = digitsHtml(out.intPart, out.decPart);
       c.signEl.classList.remove("stale");

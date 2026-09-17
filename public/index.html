@@ -397,9 +397,13 @@
   };
 
   function themeIndex(bg, fg) {
-    const key = RETIRED[`${bg}/${fg}`] || `${bg}/${fg}`;
+    const pair = `${bg}/${fg}`.toLowerCase();
+    const key = RETIRED[pair] || pair;
     return THEMES.findIndex((t) => `${t.bg}/${t.fg}` === key);
   }
+
+  // The same hex-only check instrument.html's colour() applies.
+  const HEX_RE = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 
   const el = (id) => document.getElementById(id);
   const TOKEN_KEY = "sk_token";
@@ -807,7 +811,15 @@
       group.appendChild(new Option(t.name, i));
     });
     const theme = themeIndex(item.bg, item.fg);
-    themeSelect.value = String(theme >= 0 ? theme : 0);
+    if (theme >= 0) {
+      themeSelect.value = String(theme);
+    } else if (HEX_RE.test(item.bg) && HEX_RE.test(item.fg)) {
+      // Colours no theme matches, written by hand or through a direct URL.
+      // Offered as they are, so saving something else can't recolour them.
+      slot.custom = { bg: item.bg, fg: item.fg };
+      themeSelect.appendChild(new Option(`Custom — ${item.fg} on ${item.bg}`, "custom"));
+      themeSelect.value = "custom";
+    }
 
     slot.f("remove").addEventListener("click", () => {
       root.remove();
@@ -837,7 +849,8 @@
   // same formats.js this page built its dropdown from.
   function slotConfig(slot) {
     const [path, field] = slot.f("path").value.split(FIELD_SEP);
-    const theme = THEMES[slot.f("theme").value] || THEMES[0];
+    const choice = slot.f("theme").value;
+    const theme = choice === "custom" ? slot.custom : THEMES[choice] || THEMES[0];
     const item = {
       path: path || "",
       name: slot.f("name").value.trim(),

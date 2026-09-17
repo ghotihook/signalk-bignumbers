@@ -34,7 +34,7 @@ All of these are load-bearing:
 - No history, replay or backfill. A reconnect shows the next live value.
 - If the Pi can't keep up, cut values or slow the source. Never buffer.
 
-After `staleMs` (3s) with no update a band drops to grey dashes rather
+After `staleMs` (3s) with no update a band fades to dashes rather
 than holding its last reading, so a dead feed looks dead rather than
 looking like a becalmed boat.
 
@@ -49,12 +49,17 @@ being sound the moment anything replays history into the stream.
   one instrument. Each cell is measured against its own box.
 - **Digits never move horizontally**: `tabular-nums`, ghosted leading
   zeros that keep their width, a reserved sign column when `neg` is set.
+  A reading with more integer digits than its mask shows the mask as `^`
+  rather than growing: an extra digit overflows the fitted row and clips
+  the leading one, so 140.2 would read as 40.2.
 - Fixed high-contrast themes, not colour pickers — nothing selectable
   should wash out in sun or wreck night vision. Day themes are dark digits
   on a bright ground; night reds light the red sub-pixel only (`#ff0000`,
   never a red with green or blue in it). A retired theme goes into
   `RETIRED` rather than being deleted: the editor matches saved colours
-  exactly, and an unmatched display is recoloured on its next save.
+  exactly, so a retired pair would otherwise show as "Custom" and never
+  move to its replacement. A valid pair nothing matches stays selectable
+  as Custom, so saving another field can't recolour it.
 - `MAX_ITEMS` is 3; past that the digits are too small to read from the
   rail. Raising it trades away the only thing this does well.
 - `cursor: none`, `overflow: hidden`. There's nothing to interact with.
@@ -76,6 +81,7 @@ being sound the moment anything replays history into the stream.
 - `public/formats.js` — the one presentation table, loaded by both pages
   with a plain `<script src>`. Two copies would drift, and there's no
   build step to generate one from the other.
+- `TODO.md` — known gaps, deliberately left for now.
 - `dev/dummy_signalk.py` — delta/websocket dev server.
   `dev/make_icon.py` generates `public/icon.png`.
 

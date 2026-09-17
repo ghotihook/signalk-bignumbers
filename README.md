@@ -27,7 +27,7 @@ shown late. See [Latency and load](#latency-and-load).
 
 **Large, clear numbers.** One value fills the screen; three fill a third
 each, all at the same digit size. Fixed high-contrast themes, not a
-colour picker. A value with no update for 3 seconds drops to grey dashes
+colour picker. A value with no update for 3 seconds drops to dashes
 rather than holding a stale reading.
 
 **Digits that don't jump.** A number whose digits shift sideways can't be
@@ -288,8 +288,11 @@ Restarting a display to change what it shows is never necessary.
 
 ## Reading the screen
 
-- A value with no update for 3 seconds drops to **grey dashes**. It never
+- A value with no update for 3 seconds fades to **dashes**. It never
   holds a stale reading.
+- A reading too big for its presentation shows **`^`** in every digit
+  (`^^.^`) rather than widening past the screen edge — 140 m on a
+  `xx.x` depth, say. Pick a presentation with more digits.
 - The **dot top-right** is green while the connection to SignalK is live,
   dark red when it isn't. A dropped connection retries every second and
   recovers on its own, showing the next live value rather than replaying
