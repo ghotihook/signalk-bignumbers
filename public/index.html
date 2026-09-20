@@ -240,7 +240,7 @@
 </head>
 <body>
 <main>
-  <h1>signalk-bignumbers <span class="version">v0.0.12</span></h1>
+  <h1>signalk-bignumbers <span class="version">v0.0.13</span></h1>
 
   <div class="authbar">
     <span id="authState">Not logged in</span>
@@ -594,6 +594,16 @@
         .join(" · ");
       meta.append(nameEl, pathEl);
 
+      // Opens the display's own kiosk URL, so this previews what that Pi
+      // shows -- stored config and all -- rather than a rebuild of it.
+      const preview = document.createElement("button");
+      preview.type = "button";
+      preview.className = "secondary small";
+      preview.textContent = "Preview";
+      preview.addEventListener("click", () => {
+        window.open(`${INSTRUMENT_URL}?display=${encodeURIComponent(code)}`, "_blank");
+      });
+
       const edit = document.createElement("button");
       edit.type = "button";
       edit.className = "secondary small";
@@ -606,7 +616,7 @@
       del.textContent = "Delete";
       del.addEventListener("click", () => remove(code));
 
-      row.append(codeEl, meta, edit, del);
+      row.append(codeEl, meta, preview, edit, del);
       rows.appendChild(row);
     });
   }
