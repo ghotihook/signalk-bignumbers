@@ -771,7 +771,8 @@
         groups.set(f.group, group);
         select.appendChild(group);
       }
-      groups.get(f.group).appendChild(new Option(f.name, f.id));
+      const mask = (f.neg ? "±" : "") + f.layout;
+      groups.get(f.group).appendChild(new Option(`${f.name} — ${mask}`, f.id));
     }
     select.value = item.format || matchFormat(item);
   }

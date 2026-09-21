@@ -214,12 +214,12 @@ about what one means. A few of them:
 
 | Presentation | Shows |
 |---|---|
-| ±180° — wind angle | `-143°`, folded back from 0…360 if the source sends it that way |
-| 0–360° — heading, course, direction | `183°`, in a three-digit column so it can't shift |
+| Wind angle, ±180° — ±xxx | `-143°`, folded back from 0…360 if the source sends it that way |
+| Heading, course, direction, 0–360° — xxx | `183°`, in a three-digit column so it can't shift |
 | Knots — xx.x | `8.4 kt` from SignalK's m/s |
-| Celsius | `18.3 °C` from SignalK's Kelvin |
-| Duration — HH:MM:SS | `01:02:05` from a count of seconds, e.g. time to go |
-| Clock — HH:MM:SS (local) | `14:05:09` from a timestamp |
+| Celsius — ±xx.x | `18.3 °C` from SignalK's Kelvin |
+| Duration — hh:mm:ss | `01:02:05` from a count of seconds, e.g. time to go |
+| Clock, local time — hh:mm:ss | `14:05:09` from a timestamp |
 
 To show something no presentation covers, write the conversion keys into
 the URL directly — see [Direct URLs](#direct-urls).
