@@ -15,7 +15,8 @@
   },
   "files": [
     "public/",
-    "docs/"
+    "docs/",
+    "CHANGELOG.md"
   ],
   "signalk": {
     "displayName": "signalk-bignumbers",

@@ -81,6 +81,7 @@ being sound the moment anything replays history into the stream.
 - `public/formats.js` — the one presentation table, loaded by both pages
   with a plain `<script src>`. Two copies would drift, and there's no
   build step to generate one from the other.
+- `CHANGELOG.md` — user-facing release notes; the Appstore shows them.
 - `TODO.md` — known gaps, deliberately left for now.
 - `dev/dummy_signalk.py` — delta/websocket dev server.
   `dev/make_icon.py` generates `public/icon.png`.
@@ -277,10 +278,16 @@ over http. Neither is fixable from inside this webapp.
 ## Releasing
 
 Three hand-maintained version strings, with no build step to derive one
-from another: `package.json` `version`, the `v0.0.12` label in
+from another: `package.json` `version`, the `vX.Y.Z` label in
 `public/index.html`, and the `#X.Y.Z` pin on the GitHub-install example
 in `README.md`. Bump all three together and tag the release commit (`git
 tag -a X.Y.Z`).
+
+Every release adds an entry to the top of `CHANGELOG.md`: what changed
+for the person on the boat, not how the code changed. The Appstore shows
+it — the registry reads `CHANGELOG.md` from the npm tarball, which is why
+it's in `files`. Without one it falls back to the GitHub tag message, so
+give the tag a real message too, never just the version.
 
 Then `npm publish` — **the Appstore serves the published version, not the
 tag.** 0.0.9 was tagged and never published, so boats stayed on 0.0.8.
