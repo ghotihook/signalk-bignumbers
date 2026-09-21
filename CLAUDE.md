@@ -114,6 +114,20 @@ editing colours at the dock with the instruments off must not drop it.
 Meta-driven discovery was rejected and shouldn't return on the strength
 of this: `meta` has no number-format or sign field, so it can't supply
 `layout` or `neg`, and `meta.units` is always SI, which `factor` assumes.
+Server 2.23.0 narrowed that without closing it. Unit preferences hang a
+`displayUnits` on each path's `meta` — `category`, `targetUnit`, `symbol`
+and a `displayFormat` of `"0.0"`: decimals, never a width, so still no
+`layout`, `neg` or `wrap`, and width is what reading distance decides.
+Composite paths resolve nothing at all — there's no metadata entry at
+`navigation.attitude.roll`, and the parent carries no top-level `units`
+(they sit under `meta.properties`), so attitude and position get no
+`displayUnits`. The `formula` is a Math.js string and is never evaluated
+here: that means a dependency, or `eval` on something any authenticated
+user can write. Pre-filling the editor's presentation from it was
+weighed and dropped — it still needs a hardcoded `roll` → ±99°, `yaw` →
+0–360° table, which is the path semantics this rejection is about, and a
+wrong mask that looks authoritative clips a digit. If it is ever used,
+`targetUnit` is a key, the way `format` is a key into `FORMAT_BY_ID`.
 
 **`format` expands, raw keys override.** `makeItem()` resolves
 `FORMAT_BY_ID[raw.format]`, then lets an explicit
@@ -130,8 +144,10 @@ two otherwise-identical HH:MM:SS entries can never match.
 
 The digit mask is the single source of width: `layout` gives both the
 placeholder (`--:--:--`) and `fitDisplay()`'s sample (`88:88:88`), which
-is why a colon measures as a colon. Time renderings clamp the leading
-field to two digits rather than growing a third.
+is why a colon measures as a colon. It also ends the editor's label
+(`Knots — xx.x`, `±` for `neg`), so a format's `name` never spells out
+its mask. Time renderings clamp the leading field to two digits rather
+than growing a third.
 
 ## One, two or three values
 

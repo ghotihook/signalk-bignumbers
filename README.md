@@ -19,27 +19,31 @@ A racing repeater has to do three things:
 
 How it meets them:
 
-**Fast.** A delta arrives and paints. No queue, no batch, no
+**Fast.** Someone is trimming to the number, so late data is worse than
+none. A delta arrives and paints: no queue, no batch, no
 `requestAnimationFrame`, no animation, no rate limit — a 10 Hz source
 updates the screen ten times a second. Nothing is smoothed, averaged or
-damped; that belongs upstream in SignalK. A late update is dropped, not
-shown late. See [Latency and load](#latency-and-load).
+damped; that belongs upstream in SignalK. See
+[Latency and load](#latency-and-load).
 
 **Large, clear numbers.** One value fills the screen; three fill a third
 each, all at the same digit size. Fixed high-contrast themes, not a
-colour picker. A value with no update for 3 seconds drops to dashes
-rather than holding a stale reading.
+colour picker: dark digits on a bright ground for sun, and night reds that
+light only the red sub-pixel to spare night vision. A value with no
+update for 3 seconds drops to dashes, so a dead feed looks dead rather
+than holding a stale reading.
 
 **Digits that don't jump.** A number whose digits shift sideways can't be
 read from a moving boat, so the layout is fixed before any value arrives:
 the digit template (`xx.x`) reserves a column per digit, figures are
 `tabular-nums`, leading zeros are hidden rather than removed, and a value
 that can go negative reserves its minus column. 9.9 to 10.0 and back
-moves nothing but the digits.
+moves nothing but the digits. A reading too big for its template shows
+`^^.^` rather than clipping a digit and passing 140 off as 40.
 
-**No bloat.** Two static HTML pages. No build step, bundler, framework,
-dependency, backend or plugin. A Pi Zero 2 W runs a display with headroom
-to spare.
+**No bloat.** Static files: two pages and one shared table of
+presentations. No build step, bundler, framework, dependency, backend or
+plugin. A live display uses about 3% of a Pi Zero 2 W's CPU.
 
 **Nothing to install or configure on the display.** Anything with a
 browser is a display the moment you open a URL on it: phone, old iPad,
@@ -176,7 +180,7 @@ the npm registry, so this gets the current `main`. Add `#<tag>` or
 `#<branch>` to pin one:
 
 ```bash
-npm install github:ghotihook/signalk-bignumbers#0.0.13
+npm install github:ghotihook/signalk-bignumbers#0.0.14
 ```
 
 `cd ~/.signalk` matters: signalk-server scans that directory's
@@ -201,7 +205,7 @@ Per value:
 | Field | Meaning |
 |---|---|
 | **Path** | What to show, picked from the paths this server is currently reporting. A compound value appears once per key (`navigation.attitude → roll`). A path the server has stopped reporting stays selected on a saved display, marked *not currently reporting*. |
-| **Presentation** | How to show it: the conversion from SignalK's SI units, the unit label, the digit layout and the sign handling, in one pick. Grouped by kind — Angle, Speed, Depth, Distance, Temperature, Time, Electrical, Other, Number. |
+| **Presentation** | How to show it: the conversion from SignalK's SI units, the unit label, the digit layout and the sign handling, in one pick. Grouped by kind — Angle, Speed, Depth, Distance, Temperature, Time, Electrical, Other, Number. Each is labelled with its digit template (`Knots — xx.x`), with `±` where it reserves a sign column. |
 | **Display name** | The label above the number. |
 | **Colours** | Fixed high-contrast pairs, grouped Day, Dusk and Night. See [Colours](#colours). |
 
@@ -375,7 +379,7 @@ A missing `path2` ends the list, so values can't have gaps. `host` and
 existed still means exactly what it meant then, and a conversion the list
 doesn't cover can still be spelled out key by key.
 
-The one exception is the time presentations: `HH:MM:SS` and the clock are
+The one exception is the time presentations: durations and clocks are
 reachable only through `format`, never through the raw keys.
 
 `bg` and `fg` do double duty: suffixed (`bg2`, `fg3`) they colour just
