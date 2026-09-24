@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.16 — 2026-09-25
+
+- README shows a four-value display, two by two, in day colours and in
+  white on black.
+
 ## 0.0.15 — 2026-09-25
 
 - A display can show four values, up from three. On a landscape screen
