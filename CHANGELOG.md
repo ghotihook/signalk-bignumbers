@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.15 — 2026-09-25
+
+- A display can show four values, up from three. On a landscape screen
+  the four sit two by two, left to right then down, which reads larger
+  than three stacked; a portrait screen stacks them. Nothing changes for
+  a display showing one, two or three.
+
 ## 0.0.14 — 2026-09-22
 
 - Every entry in the Presentation dropdown shows its digit template —
