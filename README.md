@@ -238,6 +238,8 @@ size. Bands sharing a background are divided by a hairline; otherwise the
 colour change is the divide. At night keep every band on black — one
 bright band costs the dark adaptation the night themes protect.
 
+<img src="docs/images/display-four.png" alt="Two landscape displays showing four values two by two — STW 6.5 kt, TWS 12.4 kt, TWA -94 degrees, DPT 6.0 m — one in white, yellow, sky blue and mint bands, one white on black with hairline dividers" width="720">
+
 **Preview** opens the config in a new tab before saving. It needs the
 values filled in first, though not the display's name — an incomplete one
 previews as a screen you didn't configure: a value with no path drops out
