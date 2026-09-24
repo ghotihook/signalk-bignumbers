@@ -298,8 +298,9 @@
     <div id="slots" class="stack"></div>
     <button type="button" class="secondary small" id="addSlotBtn">+ Add another number</button>
     <div class="hint">
-      Up to three values, stacked in equal bands down the screen in this
-      order, each with its own colours. The first value's colours are also
+      Up to four values, stacked in equal bands down the screen in this
+      order, each with its own colours. Four on a landscape screen sit two
+      by two, read left to right, then top to bottom. The first value's colours are also
       the screen's, so they show behind the "not configured" and error
       messages.
     </div>
@@ -326,7 +327,7 @@
   </footer>
 </main>
 
-<!-- One value's fields, cloned into #slots up to three times. Fields are
+<!-- One value's fields, cloned into #slots up to MAX_ITEMS times. Fields are
      addressed by data-f within their own slot rather than by id, which
      couldn't be duplicated across slots. -->
 <template id="slotTpl">
@@ -426,10 +427,10 @@
   const INSTRUMENT_URL =
     window.location.origin + window.location.pathname.replace(/[^/]*$/, "") + "instrument.html";
 
-  // A display shows up to three values, stacked. Configs saved before
+  // A display shows up to four values. Configs saved before
   // multi-value support are a bare single value with no items array, so
   // everything reads them through here.
-  const MAX_ITEMS = 3;
+  const MAX_ITEMS = 4;
 
   function itemsOf(cfg) {
     return Array.isArray(cfg.items) ? cfg.items : [cfg];
@@ -668,7 +669,7 @@
 
   // --- available paths --------------------------------------------------
   // The path dropdown lists what this boat is actually producing, read from
-  // the server's full model. Fetched once and shared by all three slots.
+  // the server's full model. Fetched once and shared by every slot.
   // Same origin as every other request here -- there is no ?host= on this
   // page, deliberately.
   //
@@ -951,7 +952,7 @@
 
   el("saveBtn").addEventListener("click", async () => {
     // Logging in is a precondition of saving at all, so it comes before the
-    // form checks -- no point filling three values in to be told at the end.
+    // form checks -- no point filling four values in to be told at the end.
     if (!token()) { setStatus("editorStatus", "Log in first (top of page).", "error"); return; }
     if (!checkEditor(hostnameProblem().concat(slotProblems()))) return;
     const code = el("code").value.trim();
@@ -984,7 +985,7 @@
     const cfg = currentConfig();
     const params = new URLSearchParams({ host: HOST, bg: cfg.bg, fg: cfg.fg });
     // The same suffix scheme instrument.html reads: none for the first
-    // value, then 2 and 3. Whatever keys an item carries are what it needs.
+    // value, then 2, 3 and 4. Whatever keys an item carries are what it needs.
     cfg.items.forEach((item, i) => {
       const suffix = i === 0 ? "" : String(i + 1);
       for (const [key, value] of Object.entries(item)) params.set(key + suffix, String(value));

@@ -42,12 +42,15 @@
     inset: 0;
     display: flex;
     flex-direction: column;
+    /* The share of a band's width fitDisplay() lets the digits fill. */
+    --fit-width: 0.92;
   }
-  /* Labels are sized against the band they sit in: with two or three
+  /* Labels are sized against the band they sit in: with more than one
      stacked, each band is shorter and a full-height label would crowd its
      number. */
   #cells.n2 { --label-size: clamp(1.3rem, 3.4vw, 2.6rem); }
   #cells.n3 { --label-size: clamp(1.1rem, 2.6vw, 2rem); }
+  #cells.n4 { --label-size: clamp(1rem, 2.1vw, 1.6rem); }
   .cell {
     flex: 1;
     min-height: 0;
@@ -75,6 +78,50 @@
      the boundary, and a hairline on top of it just reads as grubbiness. */
   .cell.recoloured::before {
     content: none;
+  }
+  /* Four values on a landscape screen go two by two. Stacked, each band is
+     a wide strip whose digits are limited by its height and leave most of
+     its width empty; as a grid the same four read larger than three
+     stacked. A portrait screen is limited by its width, so it stays
+     stacked. */
+  @media (orientation: landscape) {
+    #cells.n4 {
+      display: grid;
+      /* minmax(0, 1fr), not 1fr: a plain 1fr column grows to fit its
+         content, so a wide value like 00:00:00 would take width from the
+         column beside it. */
+      grid-template: repeat(2, minmax(0, 1fr)) / repeat(2, minmax(0, 1fr));
+      --label-size: clamp(1.1rem, 2.6vw, 2rem);
+      /* Side by side at 0.92, two numbers are a digit apart and read as
+         one: "-67 224". */
+      --fit-width: 0.8;
+    }
+    /* The divider above a band is only for the bottom row, and compares
+       with the band two back -- the one above it, not beside it. */
+    #cells.n4 .cell:nth-child(2)::before {
+      content: none;
+    }
+    #cells.n4 .cell:nth-child(n+3)::before {
+      content: "";
+    }
+    #cells.n4 .cell.recoloured2::before {
+      content: none;
+    }
+    /* The right-hand column gets a divider on its left, against the band
+       one back, which is the one beside it. */
+    #cells.n4 .cell:nth-child(even)::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 5%;
+      bottom: 5%;
+      width: 1px;
+      background: currentColor;
+      opacity: 0.15;
+    }
+    #cells.n4 .cell.recoloured:nth-child(even)::after {
+      content: none;
+    }
   }
   .title {
     /* Absolute, not fixed: it belongs to its band. With a single value the
@@ -175,7 +222,8 @@
 <script src="formats.js"></script>
 <script>
   // --- Instrument configuration ---
-  // A display shows one, two or three values, stacked in equal bands.
+  // A display shows one to four values, stacked in equal bands -- or, four
+  // on a landscape screen, two by two.
   // Config is either read entirely from the URL query string:
   //   ?path=environment.wind.speedApparent&name=AWS&format=speed-kn
   //   ?path=navigation.attitude&field=roll&name=Heel&format=angle-small
@@ -184,8 +232,8 @@
   // conversion, unit, digit layout and sign handling in one. The keys it
   // stands for can still be given individually, and override it:
   //   ?path=environment.wind.speedApparent&name=AWS&layout=xx.xx&unit=kt&factor=1.9438444924406
-  // ...with a second and third value's keys suffixed 2 and 3, so every
-  // single-value URL that ever worked still means the same thing:
+  // ...with later values' keys suffixed 2, 3 and 4, so every single-value
+  // URL that ever worked still means the same thing:
   //   ?path=navigation.speedOverGround&name=SOG&format=speed-kn&path2=environment.depth.belowTransducer&name2=DPT&format2=depth-m
   // ...or, for a "dumb" display that never needs its own config touched,
   // just an identifier -- usually the Pi's hostname, via systemd's %H --
@@ -194,9 +242,9 @@
   const params = new URLSearchParams(window.location.search);
   const displayId = params.get("display");
 
-  const MAX_ITEMS = 3;
+  const MAX_ITEMS = 4;
   // The per-value keys, as they appear both in a stored config and (with
-  // the 2/3 suffix for the second and third value) in the query string.
+  // a 2/3/4 suffix after the first value) in the query string.
   // bg/fg are here as well as at display level: unsuffixed they mean both
   // the page's colours and the first value's, which are the same thing.
   const ITEM_KEYS = ["path", "field", "name", "format", "factor", "offset", "unit", "layout", "neg", "wrap", "bg", "fg"];
@@ -252,7 +300,7 @@
   }
 
   // Values are read positionally: the suffix-free keys are the first, then
-  // 2 and 3. A missing path ends the list, so there are never gaps.
+  // 2, 3 and 4. A missing path ends the list, so there are never gaps.
   function itemsFromParams(p) {
     const items = [];
     for (let i = 0; i < MAX_ITEMS; i++) {
@@ -365,11 +413,14 @@
       };
     });
 
-    // Drop the divider above any band whose background differs from the one
-    // above it -- there, the change of colour is the boundary.
+    // Drop the divider between bands whose backgrounds differ -- there, the
+    // change of colour is the boundary. The neighbour one back is above when
+    // stacked and beside in the 2x2 grid; two back is above in the grid.
+    // Both are marked, and the CSS for each layout reads the one it needs.
     const bandBg = (i) => CONFIG.items[i].bg || CONFIG.bg || null;
     cells.forEach((c, i) => {
       if (i > 0 && bandBg(i) !== bandBg(i - 1)) c.el.classList.add("recoloured");
+      if (i > 1 && bandBg(i) !== bandBg(i - 2)) c.el.classList.add("recoloured2");
     });
   }
 
@@ -507,13 +558,14 @@
     // metrics don't scale perfectly linearly across a big range), so refine
     // over a few passes -- each one is a much smaller correction than the
     // last and converges on the true fit.
+    const fitWidth = parseFloat(getComputedStyle(cellsEl).getPropertyValue("--fit-width"));
     for (let i = 0; i < 4; i++) {
       let scale = Infinity;
       for (const c of cells) {
         const rect = c.rowEl.getBoundingClientRect();
         if (rect.width <= 0 || rect.height <= 0) { scale = Infinity; break; }
         scale = Math.min(scale,
-          (c.el.clientWidth * 0.92) / rect.width,
+          (c.el.clientWidth * fitWidth) / rect.width,
           (c.el.clientHeight * 0.85) / rect.height);
       }
       if (!Number.isFinite(scale)) break;

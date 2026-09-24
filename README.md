@@ -1,8 +1,8 @@
 # signalk-bignumbers
 
 Big, high-contrast number displays for [SignalK](https://signalk.org) —
-mast and repeater screens for racing, showing one, two or three values
-large enough to read from the rail.
+mast and repeater screens for racing, showing one to four values large
+enough to read from the rail.
 
 ![A screen strapped to a mast in bright sun, filled by the number 0.0 labelled STW and kt, black on white](docs/images/display-mast.jpg)
 
@@ -26,8 +26,8 @@ updates the screen ten times a second. Nothing is smoothed, averaged or
 damped; that belongs upstream in SignalK. See
 [Latency and load](#latency-and-load).
 
-**Large, clear numbers.** One value fills the screen; three fill a third
-each, all at the same digit size. Fixed high-contrast themes, not a
+**Large, clear numbers.** One value fills the screen; up to four share
+it, all at the same digit size. Fixed high-contrast themes, not a
 colour picker: dark digits on a bright ground for sun, and night reds that
 light only the red sub-pixel to spare night vision. A value with no
 update for 3 seconds drops to dashes, so a dead feed looks dead rather
@@ -90,7 +90,7 @@ to the number. No reload, no restart.
 <img src="docs/images/display-phone.png" alt="A phone showing three stacked bands: STW 0.0 kt white on black, TWA 13 degrees black on white, TWS 16.2 kt white on black" width="260">
 
 That phone is done. Changing what it shows is **Edit**; going from one
-value to three is **+ Add another number**. Nothing on the phone changes
+value to four is **+ Add another number**. Nothing on the phone changes
 either time.
 
 ## Proper install
@@ -228,12 +228,15 @@ about what one means. A few of them:
 To show something no presentation covers, write the conversion keys into
 the URL directly — see [Direct URLs](#direct-urls).
 
-**+ Add another number** puts a second or third value on the same screen.
+**+ Add another number** puts up to four values on the same screen.
 They split it into equal horizontal bands, top to bottom in the order
-listed, each with its own colours, all at the same digit size. Bands
-sharing a background are divided by a hairline; otherwise the colour
-change is the divide. At night keep every band on black — one bright band
-costs the dark adaptation the night themes protect.
+listed, each with its own colours, all at the same digit size. Four on a
+landscape screen sit two by two instead, left to right then down: stacked,
+each band would be a wide strip with small digits. One wide value, such
+as an `hh:mm:ss` timer, shrinks all four, since every band shares its
+size. Bands sharing a background are divided by a hairline; otherwise the
+colour change is the divide. At night keep every band on black — one
+bright band costs the dark adaptation the night themes protect.
 
 **Preview** opens the config in a new tab before saving. It needs the
 values filled in first, though not the display's name — an incomplete one
@@ -256,10 +259,11 @@ screen whose backlight can't be turned down — the page can't dim it.
 
 <img src="docs/images/themes-night.png" alt="The four dusk and night themes: white, amber, red and dim red digits on black" width="720">
 
-With two or three values, a different background per band lets a glance
+With more than one value, a different background per band lets a glance
 find the right number. The day colours stay distinct to red-green
 colour-blind crew — about one man in twelve — except lime beside yellow
-and lavender beside sky blue, so don't stack either pair.
+and lavender beside sky blue, so don't put either pair next to each
+other.
 
 <img src="docs/images/themes-bands.png" alt="Three-band displays in white, yellow and sky blue; lime, white and lavender; yellow, mint and lavender; and white on black in every band" width="720">
 
@@ -360,7 +364,7 @@ instrument.html?path=environment.wind.speedApparent&name=AWS&format=speed-kn
 | `host` | SignalK server, if not the one serving the page (whole screen) |
 | `display` | Stored-config identifier — used *instead of* all of the above |
 
-For a second and third value, suffix every per-value key with `2` and `3`.
+For later values, suffix every per-value key with `2`, `3` or `4`.
 The unsuffixed keys are the first value, so any single-value URL still
 means what it did (wrapped here for readability — it's one line):
 
@@ -394,7 +398,7 @@ The webapp's **Preview** button builds these URLs for you.
 - **`public/index.html`** — the webapp. Lists, adds, edits and deletes
   displays.
 - **`public/instrument.html`** — the display itself. Fills the screen
-  with up to three numbers, autosized to fit.
+  with up to four numbers, autosized to fit.
 - **`public/formats.js`** — the presentations, read by both pages: each
   one's conversion, unit, digit layout and sign handling.
 - **`docs/raspberry-pi-kiosk.md`** — building a display from a Pi.

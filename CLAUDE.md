@@ -60,8 +60,11 @@ being sound the moment anything replays history into the stream.
   exactly, so a retired pair would otherwise show as "Custom" and never
   move to its replacement. A valid pair nothing matches stays selectable
   as Custom, so saving another field can't recolour it.
-- `MAX_ITEMS` is 3; past that the digits are too small to read from the
-  rail. Raising it trades away the only thing this does well.
+- `MAX_ITEMS` is 4, and four fit only because a landscape screen lays
+  them out two by two: on 800×480 that's 139px digits against 115px for
+  three stacked, where four stacked would be 86px. Past four the digits
+  are too small to read from the rail. Raising it trades away the only
+  thing this does well.
 - `cursor: none`, `overflow: hidden`. There's nothing to interact with.
 
 ## Speed
@@ -150,13 +153,30 @@ is why a colon measures as a colon. It also ends the editor's label
 its mask. Time renderings clamp the leading field to two digits rather
 than growing a third.
 
-## One, two or three values
+## One to four values
 
-Up to `MAX_ITEMS` (3), stacked in equal bands. One value is not a special
+Up to `MAX_ITEMS` (4), stacked in equal bands. One value is not a special
 case anywhere — its band is the whole viewport.
 
+Four on a landscape screen are a 2×2 grid, read left to right then down.
+Stacked, each band is limited by its height and leaves its width empty; a
+portrait screen is limited by its width anyway, so it stays stacked. The
+switch is CSS only (`#cells.n4` under `orientation: landscape`), so a
+rotated screen changes layout on its own and `fitDisplay()`, which
+re-runs on resize, needs no idea which layout it's in. Three things make
+the grid work:
+
+- Columns are `minmax(0, 1fr)`. A plain `1fr` grows to fit its content,
+  so a wide value would take width from the column beside it.
+- `--fit-width` is 0.8 in the grid, not 0.92. Side by side, two numbers
+  at 0.92 sit a digit apart and read as one.
+- Each band is marked against both the band one back (`recoloured`) and
+  two back (`recoloured2`). Which of those is above depends on the
+  layout, so the CSS for each layout reads the one it needs to drop a
+  divider between two backgrounds.
+
 Both config sources normalise to one list before anything else runs:
-stored configs are `{bg, fg, items: [...]}`; URL params take a `2`/`3`
+stored configs are `{bg, fg, items: [...]}`; URL params take a `2`–`4`
 suffix, unsuffixed meaning the first value, so every pre-existing
 single-value URL still parses identically. Suffixes beat repeated params
 (`?path=a&path=b`), which misalign as soon as one value omits an optional

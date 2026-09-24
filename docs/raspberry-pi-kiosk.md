@@ -138,7 +138,7 @@ README](../README.md#the-webapp) for the fields. Two consequences on a
 Pi:
 
 - **Its local config never changes again**, unless you point it at a
-  different server or rename the Pi. Going from one number to three is a
+  different server or rename the Pi. Going from one number to four is a
   save in the webapp; restarting the service is never necessary.
 - **Renaming the Pi changes its identity.** It drops back to the
   unconfigured screen until you register the new name.
@@ -214,7 +214,7 @@ breaks unit parsing outright (`Failed to resolve unit specifiers`, and
 the unit won't load at all) unless written `%%3A`. The doubling applies
 only inside the unit file, not when running cog from a shell — which is
 why step 2 needs no escaping. It bites hardest on a multi-value URL,
-which repeats every per-value parameter two or three times: one missed
+which repeats every per-value parameter up to four times: one missed
 `%` and the unit silently won't load. `?display=` avoids it entirely.
 
 Related: **non-ASCII characters can be mangled** if typed on an SSH
