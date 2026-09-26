@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.17 — 2026-09-26
+
+- A display can show the mouse pointer: tick "Show the mouse pointer" in
+  its settings, for a screen someone uses with a mouse. It stays hidden
+  unless you do, so existing displays don't change.
+
 ## 0.0.16 — 2026-09-25
 
 - README shows a four-value display, two by two, in day colours and in
