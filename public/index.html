@@ -212,6 +212,10 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
+  label.check {
+    flex-direction: row;
+    align-items: center;
+  }
   .hint {
     font-size: 0.78rem;
     color: #777;
@@ -303,6 +307,14 @@
       by two, read left to right, then top to bottom. The first value's colours are also
       the screen's, so they show behind the "not configured" and error
       messages.
+    </div>
+
+    <label class="check">
+      <input type="checkbox" id="cursor">
+      Show the mouse pointer
+    </label>
+    <div class="hint">
+      Off for a kiosk screen. On if someone uses this display with a mouse.
     </div>
 
     <div class="buttons">
@@ -664,6 +676,7 @@
     slots = [];
     // A brand new display starts with one empty slot to fill in.
     (cfg ? itemsOf(cfg).slice(0, MAX_ITEMS) : [null]).forEach((item) => addSlot(item));
+    el("cursor").checked = !!cfg && cfg.cursor === true;
     updateKioskUrl();
   }
 
@@ -878,7 +891,10 @@
   // error screens, which exist before there are any bands to colour.
   function currentConfig() {
     const items = slots.map(slotConfig);
-    return { bg: items[0].bg, fg: items[0].fg, items };
+    const cfg = { bg: items[0].bg, fg: items[0].fg, items };
+    // Left out when off, so an untouched display saves what it always did.
+    if (el("cursor").checked) cfg.cursor = true;
+    return cfg;
   }
 
   // --- mandatory fields -------------------------------------------------
@@ -984,6 +1000,7 @@
     if (!checkEditor(slotProblems())) return;
     const cfg = currentConfig();
     const params = new URLSearchParams({ host: HOST, bg: cfg.bg, fg: cfg.fg });
+    if (cfg.cursor) params.set("cursor", "1");
     // The same suffix scheme instrument.html reads: none for the first
     // value, then 2, 3 and 4. Whatever keys an item carries are what it needs.
     cfg.items.forEach((item, i) => {

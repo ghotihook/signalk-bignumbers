@@ -66,6 +66,9 @@ being sound the moment anything replays history into the stream.
   are too small to read from the rail. Raising it trades away the only
   thing this does well.
 - `cursor: none`, `overflow: hidden`. There's nothing to interact with.
+  A display-level `cursor: true` (`?cursor=1`) shows the pointer for a
+  screen worked with a mouse. It's left out of a saved config when off,
+  so older configs read as hidden.
 
 ## Speed
 
@@ -187,7 +190,8 @@ and the `Array.isArray` check in `fetchDisplayConfig` read it as one
 value. Don't drop those paths — they're the upgrade story for anything
 already deployed.
 
-`host` and `display` belong to the display as a whole, never suffixed.
+`host`, `cursor` and `display` belong to the display as a whole, never
+suffixed.
 
 `bg`/`fg` are deliberately both per-item (`bg2`/`fg3` colour one band)
 and display-level. The page-level pair backs the "not configured" and

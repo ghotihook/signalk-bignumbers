@@ -26,6 +26,8 @@
     overflow: hidden;
     cursor: none;
   }
+  /* For a screen someone works at with a mouse, rather than a kiosk. */
+  html.show-cursor, html.show-cursor body { cursor: auto; }
   body {
     display: flex;
     align-items: center;
@@ -320,6 +322,7 @@
     host: params.get("host") || window.location.host,
     bg: colour(params.get("bg")), // theme background, e.g. #000000
     fg: colour(params.get("fg")), // theme foreground, e.g. #ffffff
+    cursor: params.get("cursor") === "1", // show the mouse pointer; hidden by default
     staleMs: 3000,                // fade to placeholder dashes if no update within this window
     reconnectMs: 1000,            // delay before retrying a dropped connection
     items: itemsFromParams(params).map(makeItem),
@@ -440,6 +443,7 @@
     document.title = CONFIG.items.map((item) => item.name).join(" · ");
     if (CONFIG.bg) document.documentElement.style.setProperty("--bg", CONFIG.bg);
     if (CONFIG.fg) document.documentElement.style.setProperty("--fg", CONFIG.fg);
+    document.documentElement.classList.toggle("show-cursor", CONFIG.cursor);
     buildCells();
     messageEl.hidden = true;
     cellsEl.hidden = false;
@@ -503,6 +507,7 @@
           ...CONFIG,
           bg: colour(raw.bg),
           fg: colour(raw.fg),
+          cursor: raw.cursor === true,
           items: (Array.isArray(raw.items) ? raw.items : [raw]).slice(0, MAX_ITEMS).map(makeItem),
         };
         start();

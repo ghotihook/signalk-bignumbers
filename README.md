@@ -364,6 +364,7 @@ instrument.html?path=environment.wind.speedApparent&name=AWS&format=speed-kn
 | `factor`, `offset` | Unit conversion: `shown = raw * factor + offset` |
 | `bg`, `fg` | Theme colours for this value's band; unsuffixed they also set the screen's. Hex only (`#000000`, `#fff`) — anything else is ignored |
 | `host` | SignalK server, if not the one serving the page (whole screen) |
+| `cursor` | `1` shows the mouse pointer, which is hidden otherwise (whole screen) |
 | `display` | Stored-config identifier — used *instead of* all of the above |
 
 For later values, suffix every per-value key with `2`, `3` or `4`.
@@ -376,8 +377,9 @@ instrument.html?path=navigation.speedOverGround&name=SOG&format=speed-kn
                &path3=navigation.attitude&field3=roll&name3=Heel&format3=angle-small
 ```
 
-A missing `path2` ends the list, so values can't have gaps. `host` and
-`display` belong to the display as a whole and are never suffixed.
+A missing `path2` ends the list, so values can't have gaps. `host`,
+`cursor` and `display` belong to the display as a whole and are never
+suffixed.
 
 `format` is shorthand, not a replacement: `layout`, `neg`, `wrap`, `unit`,
 `factor` and `offset` still work on their own, and given alongside a
