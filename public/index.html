@@ -161,15 +161,19 @@
     flex: 1;
     min-width: 0;
   }
+  /* One line each, so every row is the same height and starts its text
+     at the same x whatever the hostname or number of values. */
+  .row .meta > div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .row .meta .name {
     font-size: 0.95rem;
   }
   .row .meta .path {
     font-size: 0.75rem;
     color: #888;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
   .empty {
     color: #777;
@@ -590,7 +594,7 @@
       const row = document.createElement("div");
       row.className = "row";
 
-      const codeEl = document.createElement("span");
+      const codeEl = document.createElement("div");
       codeEl.className = "code";
       codeEl.textContent = code;
 
@@ -605,7 +609,8 @@
       pathEl.textContent = items
         .map((i) => (i.path || "") + (i.field ? "." + i.field : ""))
         .join(" · ");
-      meta.append(nameEl, pathEl);
+      meta.append(codeEl, nameEl, pathEl);
+      meta.title = [code, nameEl.textContent, pathEl.textContent].join("\n");
 
       // Opens the display's own kiosk URL, so this previews what that Pi
       // shows -- stored config and all -- rather than a rebuild of it.
@@ -629,7 +634,7 @@
       del.textContent = "Delete";
       del.addEventListener("click", () => remove(code));
 
-      row.append(codeEl, meta, preview, edit, del);
+      row.append(meta, preview, edit, del);
       rows.appendChild(row);
     });
   }
