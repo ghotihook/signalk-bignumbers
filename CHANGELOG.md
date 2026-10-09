@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.18 — 2026-10-10
+
+- The display list lines up: each display's hostname, value names and
+  paths sit one above the other, so every row is the same size however
+  long the hostname or however many values it shows. Hover a row to see
+  anything cut short.
+
 ## 0.0.17 — 2026-09-26
 
 - A display can show the mouse pointer: tick "Show the mouse pointer" in
