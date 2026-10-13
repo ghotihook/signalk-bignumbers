@@ -1,7 +1,7 @@
 {
   "name": "signalk-bignumbers",
   "version": "0.0.18",
-  "description": "Big, high-contrast number displays for SignalK — mast and repeater screens for racing, one to four values per screen, managed centrally so each screen needs no local config.",
+  "description": "The simplest SignalK racing display: one to four huge numbers, nothing to install per screen, digits that never jump, zero lag.",
   "keywords": [
     "signalk-webapp",
     "signalk-category-instruments",
