@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>signalk-bignumbers</title>
+<title>Big Numbers</title>
 <style>
   @font-face {
     font-family: "Roboto Medium";
@@ -347,7 +347,7 @@
   }
 
   function showError(message) {
-    document.title = "signalk-bignumbers — error";
+    document.title = "Big Numbers — error";
     const box = document.createElement("div");
     box.className = "error";
     box.textContent = message;
@@ -367,7 +367,7 @@
     id.textContent = displayId;
     const hint = document.createElement("div");
     hint.className = "hint";
-    hint.textContent = "Not configured yet — add this hostname in the signalk-bignumbers webapp";
+    hint.textContent = "Not configured yet — add this hostname in the Big Numbers webapp";
     box.append(id, hint);
     showMessage(box);
   }

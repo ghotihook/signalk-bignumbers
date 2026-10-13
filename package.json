@@ -19,7 +19,7 @@
     "CHANGELOG.md"
   ],
   "signalk": {
-    "displayName": "signalk-bignumbers",
+    "displayName": "Big Numbers",
     "appIcon": "./icon.png",
     "screenshots": [
       "./docs/images/display-mast.jpg",

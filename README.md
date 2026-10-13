@@ -62,7 +62,7 @@ touch.
 Five minutes, using a phone as the display.
 
 **1. Install the webapp** — the only thing that gets installed anywhere.
-In SignalK's admin UI: *Appstore → Available*, find `signalk-bignumbers`,
+In SignalK's admin UI: *Appstore → Available*, find **Big Numbers**,
 **Install**, then restart the server.
 
 **2. Open this on the phone.** Substitute your own server address for
@@ -185,7 +185,7 @@ npm install github:ghotihook/signalk-bignumbers#0.0.18
 
 `cd ~/.signalk` matters: signalk-server scans that directory's
 `node_modules` for webapps at startup, so anywhere else leaves it
-invisible. Either way, **signalk-bignumbers** appears in the Webapps menu
+invisible. Either way, **Big Numbers** appears in the Webapps menu
 after the restart, served at
 `http://<your-server>:3000/signalk-bignumbers/`.
 
