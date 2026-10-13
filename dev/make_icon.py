@@ -11,7 +11,8 @@ Two stacked bands with inverted colours, each with its label top-left,
 which is what a two-value display actually looks like. A single big
 number on a tile was the obvious icon and is already taken -- KIP's looks
 like that -- so the bands are doing the work of telling the two apart at
-thumbnail size.
+thumbnail size. The light band is black on yellow, one of the day
+themes, so the tile has some colour without leaving the palette.
 
 Needs Pillow, which nothing else here does: pip install pillow
 """
@@ -27,6 +28,7 @@ OUT = ROOT / "public" / "icon.png"
 SIZE = 512          # well above SignalK's 72px minimum, so it scales down cleanly
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+YELLOW = (0xff, 0xe6, 0x00)  # "Black on yellow" in index.html's THEMES
 
 # One entry per band, top to bottom: label, value, and whether the band has
 # a light background.
@@ -93,7 +95,7 @@ def main():
     for i, (label, value, light) in enumerate(BANDS):
         top = round(i * band_h)
         bottom = round((i + 1) * band_h)
-        bg, fg = (WHITE, BLACK) if light else (BLACK, WHITE)
+        bg, fg = (YELLOW, BLACK) if light else (BLACK, WHITE)
         draw.rectangle([0, top, SIZE, bottom - 1], fill=bg)
 
         pad = band_h * LABEL_PAD
