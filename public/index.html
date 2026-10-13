@@ -825,9 +825,9 @@
   // an entry in FORMATS, so matching on those keys recognises it, and saving
   // rewrites it as a slug. An unrecognised one shows as Custom.
   function matchFormat(item) {
-    // mode is in here so the time presentations can never be matched: a
+    // mode is in here so raw keys alone never match a time presentation: a
     // stored item has no mode, and the two HH:MM:SS entries are otherwise
-    // indistinguishable from each other.
+    // indistinguishable from each other. Only a slug supplies one.
     const signature = (o) => [
       o.factor === undefined ? 1 : Number(o.factor),
       o.offset === undefined ? 0 : Number(o.offset),
