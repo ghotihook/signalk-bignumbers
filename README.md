@@ -82,7 +82,7 @@ URL; use the same word in the next step.
 Webapps menu). Log in at the top, **+ Add display**, type `phone`, pick a path
 and a presentation, name it, **Save**.
 
-![The webapp's display list: a row for phone showing STW, TWA and TWS, alongside a mast1 row from an earlier setup, each with Edit and Delete buttons](docs/images/webapp-displays.png)
+<img src="docs/images/webapp-displays.png" alt="The webapp's display list: rows for cockpit (STW, TWS, TWA, DPT), mast1 (STW, SOG, AWS) and phone (STW, TWA, TWS), each with Preview, Edit and Delete buttons" width="560">
 
 **4. Watch the phone.** Within about 5 seconds it switches from its name
 to the number. No reload, no restart.
@@ -198,7 +198,7 @@ fixed once created, and is letters, digits, dots and hyphens only — on a
 Pi it has to match the hostname character for character, and either way
 it goes into a URL.
 
-<img src="docs/images/webapp-edit.png" alt="The display editor for phone: value 1 is navigation.speedThroughWater shown as Knots — xx.x, named STW, black on white; value 2 is environment.wind.angleTrueWater shown as ±180° — wind angle, named TWA, cyan on black" width="460">
+<img src="docs/images/webapp-edit.png" alt="The display editor for phone: STW is navigation.speedThroughWater as Knots — xx.x, white on black; TWA is environment.wind.angleTrueWater as Wind angle, ±180° — ±xxx, black on white; TWS is environment.wind.speedTrue as Knots — xx.x, white on black" width="460">
 
 Per value:
 

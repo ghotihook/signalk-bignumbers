@@ -23,7 +23,11 @@
     "appIcon": "./icon.png",
     "screenshots": [
       "./docs/images/display-mast.jpg",
+      "./docs/images/display-mast-three.jpg",
+      "./docs/images/display-four.png",
       "./docs/images/display-phone.png",
+      "./docs/images/themes-day.png",
+      "./docs/images/themes-night.png",
       "./docs/images/webapp-displays.png"
     ]
   }

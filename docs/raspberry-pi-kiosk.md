@@ -61,7 +61,7 @@ hostname. Nothing is stored yet, so:
 3. **+ Add display**, enter the hostname shown on the kiosk's screen,
    pick a path and a presentation, name it, **Save**.
 
-![The webapp's display list, with rows for mast1 and phone showing the instruments each is displaying](images/webapp-displays.png)
+<img src="images/webapp-displays.png" alt="The webapp's display list: rows for cockpit, mast1 and phone, each showing the values it displays, with Preview, Edit and Delete buttons" width="560">
 
 Within about 5 seconds the kiosk screen should switch from its hostname
 to the instrument:
