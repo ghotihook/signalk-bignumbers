@@ -37,6 +37,9 @@ const FORMATS = [
 
   { id: "dur-hms", group: "Time", name: "Duration", layout: "hh:mm:ss", mode: "duration" },
   { id: "dur-ms", group: "Time", name: "Duration", layout: "mm:ss", mode: "duration" },
+  // A start timer that keeps counting after the gun: -00:10 is ten seconds
+  // late, where plain Duration reads it the same as ten seconds to go.
+  { id: "dur-ms-neg", group: "Time", name: "Start timer", layout: "mm:ss", mode: "duration", neg: true },
   { id: "dur-hm", group: "Time", name: "Duration", layout: "hh:mm", mode: "duration" },
   { id: "clock-hms", group: "Time", name: "Clock, local time", layout: "hh:mm:ss", mode: "clock" },
   { id: "clock-hm", group: "Time", name: "Clock, local time", layout: "hh:mm", mode: "clock" },

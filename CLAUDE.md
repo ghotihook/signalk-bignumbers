@@ -146,8 +146,11 @@ comes from the table only, so a hand-written config can't reach a time
 rendering by accident.
 
 `matchFormat()` recognises a pre-format config by its conversion keys and
-upgrades it to a slug on the next save. `mode` is in its signature so the
-two otherwise-identical HH:MM:SS entries can never match.
+upgrades it to a slug on the next save. Keys nothing matches show as
+Custom and save back as they were, the way a custom colour pair does;
+picking a listed presentation drops them, since raw keys override a slug.
+`mode` is in its signature so the two otherwise-identical HH:MM:SS
+entries can never match.
 
 The digit mask is the single source of width: `layout` gives both the
 placeholder (`--:--:--`) and `fitDisplay()`'s sample (`88:88:88`), which

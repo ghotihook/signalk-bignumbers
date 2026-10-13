@@ -778,9 +778,14 @@
     }
   }
 
+  // The keys a presentation stands in for. A stored value can carry them
+  // itself, written by hand or saved from a direct URL.
+  const CONVERSION_KEYS = ["factor", "offset", "unit", "layout", "neg", "wrap"];
+
   // The presentation carries everything about turning the value into what
   // the screen shows: conversion, unit, digit layout and sign handling.
-  function fillFormatSelect(select, item) {
+  function fillFormatSelect(slot, item) {
+    const select = slot.f("format");
     select.appendChild(new Option("— choose —", ""));
     const groups = new Map();
     for (const f of FORMATS) {
@@ -793,14 +798,32 @@
       const mask = (f.neg ? "±" : "") + f.layout;
       groups.get(f.group).appendChild(new Option(`${f.name} — ${mask}`, f.id));
     }
-    select.value = item.format || matchFormat(item);
+
+    // Read the way instrument.html's makeItem() reads it: the slug, with any
+    // raw keys winning over it. Keys that only restate a presentation resolve
+    // to that presentation, and saving rewrites them as its slug.
+    const own = Object.fromEntries(CONVERSION_KEYS
+      .filter((k) => item[k] !== undefined && item[k] !== null && item[k] !== "")
+      .map((k) => [k, item[k]]));
+    const listed = matchFormat({ path: item.path, ...FORMAT_BY_ID[item.format], ...own });
+    if (listed || Object.keys(own).length === 0) {
+      select.value = listed || item.format || "";
+      return;
+    }
+    // Keys no presentation matches. Offered as they are, the way Colours
+    // offers a custom pair, so saving another field can't drop them; picking
+    // a listed presentation replaces them.
+    const shown = { ...FORMAT_BY_ID[item.format], ...own };
+    const mask = (shown.neg === true || shown.neg === "true" ? "±" : "") + (shown.layout || "x");
+    slot.customFormat = { ...(item.format ? { format: item.format } : {}), ...own };
+    select.appendChild(new Option(`Custom — ${mask}${shown.unit ? " " + shown.unit : ""}`, "custom"));
+    select.value = "custom";
   }
 
   // A config saved before presentations existed carries the raw conversion
   // keys instead of a slug. Every one of the presets they were built from is
   // an entry in FORMATS, so matching on those keys recognises it, and saving
-  // rewrites it as a slug. An unrecognised one leaves "— choose —" showing,
-  // which the save check then insists on.
+  // rewrites it as a slug. An unrecognised one shows as Custom.
   function matchFormat(item) {
     // mode is in here so the time presentations can never be matched: a
     // stored item has no mode, and the two HH:MM:SS entries are otherwise
@@ -827,7 +850,7 @@
     const item = cfg || {};
 
     fillPathSelect(slot.f("path"), item);
-    fillFormatSelect(slot.f("format"), item);
+    fillFormatSelect(slot, item);
     slot.f("name").value = item.name || "";
 
     const themeSelect = slot.f("theme");
@@ -876,15 +899,17 @@
   // or from URL params: which path, how to present it, what to call it and
   // what colour. The format slug stands in for the conversion, unit, digit
   // layout and sign handling, which instrument.html resolves through the
-  // same formats.js this page built its dropdown from.
+  // same formats.js this page built its dropdown from. A Custom presentation
+  // writes back the keys it was loaded with instead.
   function slotConfig(slot) {
     const [path, field] = slot.f("path").value.split(FIELD_SEP);
     const choice = slot.f("theme").value;
     const theme = choice === "custom" ? slot.custom : THEMES[choice] || THEMES[0];
+    const format = slot.f("format").value;
     const item = {
       path: path || "",
       name: slot.f("name").value.trim(),
-      format: slot.f("format").value,
+      ...(format === "custom" ? slot.customFormat : { format }),
       bg: theme.bg, fg: theme.fg,
     };
     if (field) item.field = field;

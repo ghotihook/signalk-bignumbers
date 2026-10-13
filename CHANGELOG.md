@@ -6,6 +6,10 @@
   else changes: same install, same URLs, every display keeps its
   settings.
 - A colour icon: black on yellow over white on black.
+- New presentation, Start timer: a minus sign once the gun has gone, so
+  ten seconds late no longer reads the same as ten seconds to go.
+- A display whose presentation was written by hand shows it as Custom in
+  the editor, and saving keeps it instead of dropping it.
 - The Appstore shows more of what a display looks like: three values on
   the mast, four two by two, the day and night colours, and the display
   list.

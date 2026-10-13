@@ -223,10 +223,13 @@ about what one means. A few of them:
 | Knots — xx.x | `8.4 kt` from SignalK's m/s |
 | Celsius — ±xx.x | `18.3 °C` from SignalK's Kelvin |
 | Duration — hh:mm:ss | `01:02:05` from a count of seconds, e.g. time to go |
+| Start timer — ±mm:ss | `-00:10` once the gun has gone, where Duration would read `00:10` |
 | Clock, local time — hh:mm:ss | `14:05:09` from a timestamp |
 
 To show something no presentation covers, write the conversion keys into
-the URL directly — see [Direct URLs](#direct-urls).
+the URL directly — see [Direct URLs](#direct-urls). Written into a stored
+config instead, they show in the editor as **Custom**, and saving keeps
+them until you pick a listed presentation.
 
 **+ Add another number** puts up to four values on the same screen.
 They split it into equal horizontal bands, top to bottom in the order
