@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.19 — 2026-10-14
+
+- Now called Big Numbers in the Appstore and the Webapps menu. Nothing
+  else changes: same install, same URLs, every display keeps its
+  settings.
+- A colour icon: black on yellow over white on black.
+- The Appstore shows more of what a display looks like: three values on
+  the mast, four two by two, the day and night colours, and the display
+  list.
+
 ## 0.0.18 — 2026-10-10
 
 - The display list lines up: each display's hostname, value names and

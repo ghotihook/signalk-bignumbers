@@ -1,6 +1,6 @@
 {
   "name": "signalk-bignumbers",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "The simplest SignalK racing display: one to four huge numbers, nothing to install per screen, digits that never jump, zero lag.",
   "keywords": [
     "signalk-webapp",
